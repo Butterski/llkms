@@ -8,7 +8,7 @@ from langchain_community.callbacks import get_openai_callback
 from ..logger import logger
 
 class RAGPipeline:
-    def __init__(self, vector_store: FAISS, model: str = "gpt-4"):
+    def __init__(self, vector_store: FAISS, model: str = "gpt-4o-mini"):
         self.vector_store = vector_store
         self.model = model
         self.llm = ChatOpenAI(model=model)
