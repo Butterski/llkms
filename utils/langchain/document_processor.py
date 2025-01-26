@@ -1,11 +1,9 @@
-import io
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import (
     PyPDFLoader,
-    S3DirectoryLoader,
     UnstructuredImageLoader,
 )
 from langchain_community.vectorstores import FAISS
@@ -13,7 +11,7 @@ from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from PIL import Image
 from langchain_community.callbacks import get_openai_callback
-
+from utils.logger import logger
 
 
 class DocumentProcessor:
@@ -36,10 +34,11 @@ class DocumentProcessor:
         loader = UnstructuredImageLoader(str(file_path))
         return loader.load()
 
-    def create_vector_store(self, documents: List[Document]) -> Tuple[FAISS, Dict[str, Any]]:
+    def create_vector_store(self, documents: List[Document], model_provider: str = "deepseek", model: str = "deepseek-chat") -> Tuple[FAISS, Dict[str, Any]]:
         """Create FAISS vector store from documents and return usage stats"""
         with get_openai_callback() as cb:
             vector_store = FAISS.from_documents(documents, self.embeddings)
+            logger.info(f"Created vector store using {model_provider} {model}")
             return vector_store, {
                 "total_tokens": cb.total_tokens,
                 "total_cost": cb.total_cost,

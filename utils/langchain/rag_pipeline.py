@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Any, Tuple
 from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
@@ -8,10 +9,19 @@ from langchain_community.callbacks import get_openai_callback
 from ..logger import logger
 
 class RAGPipeline:
-    def __init__(self, vector_store: FAISS, model: str = "gpt-4o-mini"):
+    def __init__(self, vector_store: FAISS, model_provider: str = "deepseek", model: str = "deepseek-chat"):
         self.vector_store = vector_store
         self.model = model
-        self.llm = ChatOpenAI(model=model)
+        
+        if model_provider == "deepseek":
+            self.llm = ChatOpenAI(
+                model=model,
+                openai_api_key=os.getenv("DEEPSEEK_API_KEY"),
+                openai_api_base='https://api.deepseek.com',
+                max_tokens=1024
+            )
+        else:  # OpenAI
+            self.llm = ChatOpenAI(model=model)
         
         # Define RAG prompt
         self.prompt = PromptTemplate.from_template("""

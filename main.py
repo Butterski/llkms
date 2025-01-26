@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 from typing import Dict, Any
+import argparse
 
 from dotenv import load_dotenv
 
@@ -32,7 +33,7 @@ class DocumentProcessingPipeline:
             "successful_requests": 0
         }
 
-    def process_s3_bucket(self, bucket: str, prefix: str = "") -> RAGPipeline:
+    def process_s3_bucket(self, bucket: str, prefix: str = "", model_provider: str = "deepseek", model: str = "deepseek-chat") -> RAGPipeline:
         """Process all files in S3 bucket and create RAG pipeline"""
         logger.info(f"Starting to process bucket {bucket} with prefix '{prefix}'")
         files = self.s3_client.list_files(bucket, prefix)
@@ -77,7 +78,7 @@ class DocumentProcessingPipeline:
         logger.info(f"Creating vector store with {len(documents)} documents")
         vector_store, usage = self.doc_processor.create_vector_store(documents)
         self._update_usage(usage)
-        return RAGPipeline(vector_store)
+        return RAGPipeline(vector_store, model_provider=model_provider, model=model)
     
     def _update_usage(self, usage: Dict[str, Any]):
         """Update total usage statistics"""
@@ -95,13 +96,36 @@ class DocumentProcessingPipeline:
             logger.debug("Temporary directory removed")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='LLKMS - Language Learning Knowledge Management System')
+    parser.add_argument(
+        '--model-provider', 
+        type=str, 
+        default='deepseek',
+        choices=['deepseek', 'openai'],
+        help='The model provider to use (default: deepseek)'
+    )
+    parser.add_argument(
+        '--model', 
+        type=str,
+        default='deepseek-chat',
+        help='The specific model to use (default: deepseek-chat)'
+    )
+    return parser.parse_args()
+
 def main():
-    logger.info("Starting LLKMS application")
+    args = parse_args()
+    logger.info(f"Starting LLKMS application with {args.model_provider} provider and {args.model} model")
     pipeline = DocumentProcessingPipeline()
 
     try:
         logger.info("Initializing RAG system")
-        rag = pipeline.process_s3_bucket(bucket="eng-llkms", prefix="knowledge")
+        rag = pipeline.process_s3_bucket(
+            bucket="eng-llkms", 
+            prefix="knowledge", 
+            model_provider=args.model_provider,
+            model=args.model
+        )
 
         logger.info("Starting interactive query loop")
         while True:
