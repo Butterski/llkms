@@ -31,3 +31,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+# temp files
+temp/
+logs/
+*.log
+vector_store_cache/
