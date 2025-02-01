@@ -12,6 +12,7 @@ from utils.langchain.document_processor import DocumentProcessor
 from utils.langchain.rag_pipeline import RAGPipeline
 from utils.vector_store_manager import VectorStoreManager
 from utils.logger import logger
+from utils.interactive_query import run_interactive_query
 
 class DocumentProcessingPipeline:
     def __init__(self):
@@ -166,20 +167,8 @@ def main():
             model=args.model,
             reindex=args.reindex
         ))
-        logger.info("Starting interactive query loop")
-        while True:
-            question = input("\nEnter your question (or 'quit' to exit): ")
-            if question.lower() == "quit":
-                logger.info("User requested to quit")
-                break
-            try:
-                logger.debug(f"Processing question: {question}")
-                answer, usage = rag.query(question)
-                pipeline._update_usage(usage)
-                print(f"\nAnswer: {answer}")
-            except Exception as e:
-                logger.error(f"Error processing question: {e}")
-                print(f"Error processing question: {e}")
+        # Replace interactive query loop with new module invocation
+        run_interactive_query(rag, pipeline._update_usage)
     except Exception as e:
         logger.error(f"Application error: {e}")
         raise
