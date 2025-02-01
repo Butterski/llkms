@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llkms"
+version = "0.1.0"
+description = "A Language Learning Knowledge Management System"
+requires-python = ">=3.9"
+authors = [
+    { name = "Milosz" }
+]
+urls = { "Homepage" = "https://github.com/Butterski/llkms" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "pytest",
+    "langchain",
+    "faiss-cpu",
+    "python-docx",
+    "beautifulsoup4",
+    "boto3",
+    "python-dotenv",
+    "Pillow"
+]
+
+[project.scripts]
+llkms = "llkms.main:main"

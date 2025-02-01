@@ -1,4 +1,4 @@
-from utils.logger import logger
+from llkms.utils.logger import logger
 
 def run_interactive_query(rag, update_usage_callback):
     """

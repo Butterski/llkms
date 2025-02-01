@@ -6,7 +6,7 @@ from typing import List
 import boto3
 from dotenv import load_dotenv
 
-from ..logger import logger
+from llkms.utils.logger import logger
 
 class S3Client:
     def __init__(self):

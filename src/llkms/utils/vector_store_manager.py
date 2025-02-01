@@ -1,9 +1,11 @@
 import os
 import pickle
 from pathlib import Path
+
 import faiss
-from langchain_community.vectorstores import FAISS
 from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.vectorstores import FAISS
+
 
 class VectorStoreManager:
     def __init__(self, cache_dir: str = "vector_store_cache"):
@@ -56,10 +58,5 @@ class VectorStoreManager:
         docstore = InMemoryDocstore()
         docstore._dict = docs_dict
         index_to_docstore_id = {i: key for i, key in enumerate(docs_dict.keys())}
-        vector_store = FAISS(
-            embeddings,
-            index=index,
-            docstore=docstore,
-            index_to_docstore_id=index_to_docstore_id
-        )
+        vector_store = FAISS(embeddings, index=index, docstore=docstore, index_to_docstore_id=index_to_docstore_id)
         return vector_store

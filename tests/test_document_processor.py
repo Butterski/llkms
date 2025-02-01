@@ -26,7 +26,6 @@ def test_process_html(tmp_path):
     assert any(text.strip() in doc.page_content for doc in documents)
 
 
-@pytest.mark.skipif(os.name == "nt" and "USERPROFILE" in os.environ, reason="Requires python-docx file creation")
 def test_process_docx(tmp_path):
     from docx import Document as DocxDocument
 

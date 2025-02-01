@@ -1,20 +1,16 @@
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+from bs4 import BeautifulSoup
+from docx import Document as DocxDocument
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import (
-    PyPDFLoader,
-    UnstructuredImageLoader,
-)
+from langchain_community.callbacks import get_openai_callback
+from langchain_community.document_loaders import PyPDFLoader, UnstructuredImageLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 from PIL import Image
-from langchain_community.callbacks import get_openai_callback
-from utils.logger import logger
-
-from docx import Document as DocxDocument
-from bs4 import BeautifulSoup
+from llkms.utils.logger import logger
 
 
 class DocumentProcessor:

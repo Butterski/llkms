@@ -7,12 +7,12 @@ from typing import List
 
 from dotenv import load_dotenv
 
-from utils.aws.s3_client import S3Client
-from utils.langchain.document_processor import DocumentProcessor
-from utils.langchain.rag_pipeline import RAGPipeline
-from utils.vector_store_manager import VectorStoreManager
-from utils.logger import logger
-from utils.interactive_query import run_interactive_query
+from llkms.utils.aws.s3_client import S3Client
+from llkms.utils.langchain.document_processor import DocumentProcessor
+from llkms.utils.langchain.rag_pipeline import RAGPipeline
+from llkms.utils.vector_store_manager import VectorStoreManager
+from llkms.utils.logger import logger
+from llkms.utils.interactive_query import run_interactive_query
 
 class DocumentProcessingPipeline:
     def __init__(self):

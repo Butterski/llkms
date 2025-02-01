@@ -6,7 +6,8 @@ setup(
     description="A Language Learning Knowledge Management System",
     author="Milosz",
     url="https://github.com/Butterski/llkms",
-    packages=find_packages(),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=[
         "pytest",
         "langchain",
@@ -19,7 +20,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "llkms=main:main",
+            "llkms=llkms.main:main",  # updated entry point to match new package structure
         ],
     },
     classifiers=[
