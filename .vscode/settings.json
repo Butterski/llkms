@@ -1,4 +1,5 @@
 {
+    "powershell.cwd": "${workspaceFolder}",
     "python.analysis.autoImportCompletions": true,
     "[python]": {
       "editor.defaultFormatter": "ms-python.black-formatter",
