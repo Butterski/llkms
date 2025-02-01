@@ -3,7 +3,12 @@ import sys
 from pathlib import Path
 
 def setup_logger():
-    """Configure and return a global logger"""
+    """
+    Configure and return a global logger.
+
+    Returns:
+        logging.Logger: Configured logger instance.
+    """
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
     

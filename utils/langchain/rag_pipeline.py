@@ -10,6 +10,14 @@ from ..logger import logger
 
 class RAGPipeline:
     def __init__(self, vector_store: FAISS, model_provider: str = "deepseek", model: str = "deepseek-chat"):
+        """
+        Initialize the RAGPipeline.
+
+        Args:
+            vector_store (FAISS): The vector store instance.
+            model_provider (str, optional): Provider of the model. Defaults to "deepseek".
+            model (str, optional): Model name. Defaults to "deepseek-chat".
+        """
         self.vector_store = vector_store
         self.model = model
         
@@ -42,7 +50,15 @@ class RAGPipeline:
         )
     
     def query(self, question: str) -> Tuple[str, Dict[str, Any]]:
-        """Execute RAG query and return response with token usage"""
+        """
+        Execute the RAG query.
+
+        Args:
+            question (str): The user's question.
+
+        Returns:
+            Tuple[str, Dict[str, Any]]: The answer and token usage details.
+        """
         with get_openai_callback() as cb:
             response = self.chain.invoke(question)
             logger.debug(f"Query tokens - Prompt: {cb.prompt_tokens}, Completion: {cb.completion_tokens}")

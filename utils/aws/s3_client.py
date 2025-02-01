@@ -8,9 +8,9 @@ from dotenv import load_dotenv
 
 from ..logger import logger
 
-
 class S3Client:
     def __init__(self):
+        """Initialize the S3 client using AWS credentials from environment variables."""
         load_dotenv()
         self.client = boto3.client(
             "s3",
@@ -20,7 +20,16 @@ class S3Client:
         logger.info("Initialized S3 client")
 
     def list_files(self, bucket: str, prefix: str = "") -> List[str]:
-        """List all files in S3 bucket with given prefix"""
+        """
+        List all files in an S3 bucket with a given prefix.
+
+        Args:
+            bucket (str): S3 bucket name.
+            prefix (str, optional): Prefix filter. Defaults to "".
+
+        Returns:
+            List[str]: List of file keys.
+        """
         logger.info(f"Listing files in bucket {bucket} with prefix '{prefix}'")
         response = self.client.list_objects_v2(Bucket=bucket, Prefix=prefix)
         files = [obj["Key"] for obj in response.get("Contents", [])]
@@ -28,7 +37,17 @@ class S3Client:
         return files
 
     def download_file(self, bucket: str, key: str, local_path: Path):
-        """Download a single file from S3"""
+        """
+        Download a single file from S3 to local path.
+
+        Args:
+            bucket (str): S3 bucket name.
+            key (str): File key in the bucket.
+            local_path (Path): Local file path to save the file.
+
+        Raises:
+            Exception: Propagates any exception encountered during download.
+        """
         try:
             logger.debug(f"Downloading {key} to {local_path}")
             # Create directory structure

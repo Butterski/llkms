@@ -15,6 +15,7 @@ from utils.logger import logger
 
 class DocumentProcessingPipeline:
     def __init__(self):
+        """Initialize DocumentProcessingPipeline by setting up S3 client, document processor, and temporary directories."""
         load_dotenv(override=True)
         os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
         self.s3_client = S3Client()
@@ -37,7 +38,18 @@ class DocumentProcessingPipeline:
 
     async def process_s3_bucket_async(self, bucket: str, prefix: str = "", model_provider: str = "deepseek",
                                         model: str = "deepseek-chat", reindex: bool = False) -> RAGPipeline:
-        """Asynchronously process files from S3 or load cached vector store, then create RAG pipeline."""
+        """Process files from an S3 bucket asynchronously or load a cached vector store.
+
+        Args:
+            bucket (str): S3 bucket name.
+            prefix (str, optional): Prefix filter. Defaults to "".
+            model_provider (str, optional): Model provider. Defaults to "deepseek".
+            model (str, optional): Model name. Defaults to "deepseek-chat".
+            reindex (bool, optional): Force reindexing if True. Defaults to False.
+
+        Returns:
+            RAGPipeline: The RAG pipeline initialized with the vector store.
+        """
         if self.vector_cache.exists() and not reindex:
             logger.info("Loading local vector store from cache.")
             vector_store = self.vector_cache.load(self.doc_processor.embeddings)
@@ -73,7 +85,15 @@ class DocumentProcessingPipeline:
         return RAGPipeline(vector_store, model_provider=model_provider, model=model)
 
     async def async_process_file(self, bucket: str, file_key: str) -> List:
-        """Asynchronously download and process a single file from S3."""
+        """Asynchronously download and process a single file from S3.
+
+        Args:
+            bucket (str): S3 bucket name.
+            file_key (str): Key of the file in the bucket.
+
+        Returns:
+            List: Documents processed from the file.
+        """
         logger.info(f"Processing file asynchronously: {file_key}")
         loop = asyncio.get_event_loop()
         relative_path = Path(file_key)
@@ -98,6 +118,11 @@ class DocumentProcessingPipeline:
             return []
 
     def _update_usage(self, usage: dict):
+        """Update the cumulative usage statistics.
+
+        Args:
+            usage (dict): Dictionary with usage statistics.
+        """
         self.total_usage["total_tokens"] += usage.get("total_tokens", 0)
         self.total_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
         self.total_usage["completion_tokens"] += usage.get("completion_tokens", 0)
@@ -105,13 +130,18 @@ class DocumentProcessingPipeline:
         self.total_usage["successful_requests"] += usage.get("successful_requests", 0)
 
     def cleanup(self):
-        """Clean up temporary files"""
+        """Clean up temporary files used during processing."""
         logger.info("Cleaning up temporary files")
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
             logger.debug("Temporary directory removed")
 
 def parse_args():
+    """Parse command-line arguments.
+
+    Returns:
+        argparse.Namespace: Parsed arguments.
+    """
     parser = argparse.ArgumentParser(description='LLKMS - Language Learning Knowledge Management System')
     parser.add_argument('--model-provider', type=str, default='deepseek',
                         choices=['deepseek', 'openai'],
@@ -123,6 +153,7 @@ def parse_args():
     return parser.parse_args()
 
 def main():
+    """Main entry point for the LLKMS application."""
     args = parse_args()
     logger.info(f"Starting LLKMS application with {args.model_provider} provider and {args.model} model")
     pipeline = DocumentProcessingPipeline()
