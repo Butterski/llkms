@@ -7,6 +7,5 @@ unstructured
 faiss-cpu
 pillow
 pypdf2
-faiss
 python-docx
 bs4

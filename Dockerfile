@@ -7,9 +7,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+COPY setup.py .
 COPY . .
 
+RUN pip install --no-cache-dir -e .
+
+# Option 1: Run the app using the entry-point defined in setup.py (llkms command)
+# CMD ["llkms"]
+
+# Option 2: Run main.py directly
 CMD ["python", "main.py"]
