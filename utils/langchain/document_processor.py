@@ -13,6 +13,9 @@ from PIL import Image
 from langchain_community.callbacks import get_openai_callback
 from utils.logger import logger
 
+from docx import Document as DocxDocument
+from bs4 import BeautifulSoup
+
 
 class DocumentProcessor:
     def __init__(self, embedding_model: str = "text-embedding-3-small"):
@@ -33,6 +36,28 @@ class DocumentProcessor:
         """Process image file into document with caption"""
         loader = UnstructuredImageLoader(str(file_path))
         return loader.load()
+
+    def process_docx(self, file_path: Path) -> List[Document]:
+        """Process DOCX file into chunks"""
+        try:
+            doc = DocxDocument(str(file_path))
+            full_text = "\n".join([para.text for para in doc.paragraphs])
+            return self.process_text(full_text)
+        except Exception as e:
+            logger.error(f"Error processing DOCX file {file_path}: {str(e)}")
+            return []
+
+    def process_html(self, file_path: Path) -> List[Document]:
+        """Process HTML file into chunks"""
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+            soup = BeautifulSoup(html_content, "html.parser")
+            text = soup.get_text(separator="\n")
+            return self.process_text(text)
+        except Exception as e:
+            logger.error(f"Error processing HTML file {file_path}: {str(e)}")
+            return []
 
     def create_vector_store(self, documents: List[Document], model_provider: str = "deepseek", model: str = "deepseek-chat") -> Tuple[FAISS, Dict[str, Any]]:
         """Create FAISS vector store from documents and return usage stats"""
