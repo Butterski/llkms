@@ -1,15 +1,12 @@
 import os
-from typing import Any, Dict, Tuple
-
+from typing import Dict, Any, Tuple
+from langchain_openai import ChatOpenAI
 from langchain.prompts import PromptTemplate
-from langchain_community.callbacks import get_openai_callback
-from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import ChatOpenAI
-
-from llkms.utils.logger import logger
-
+from langchain_community.vectorstores import FAISS
+from langchain_community.callbacks import get_openai_callback
+from ..logger import logger
 
 class RAGPipeline:
     def __init__(self, vector_store: FAISS, model_provider: str = "deepseek", model: str = "deepseek-chat"):
@@ -51,18 +48,6 @@ class RAGPipeline:
             | self.llm
             | StrOutputParser()
         )
-    
-    def get_retrieved_docs(self, question: str):
-        """
-        Retrieve the documents used as context for the given question.
-
-        Args:
-            question (str): The user's question.
-
-        Returns:
-            List[Document]: List of retrieved documents with metadata.
-        """
-        return self.vector_store.as_retriever().get_relevant_documents(question)
     
     def query(self, question: str) -> Tuple[str, Dict[str, Any]]:
         """
