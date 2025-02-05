@@ -1,3 +1,7 @@
+# Version control
+.git
+.gitignore
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -32,3 +36,9 @@ temp/
 logs/
 *.log
 vector_store_cache/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
