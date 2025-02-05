@@ -1,6 +1,6 @@
 import logging
 
-from utils.logger import setup_logger
+from llkms.utils.logger import setup_logger
 
 
 def test_setup_logger():

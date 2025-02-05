@@ -3,7 +3,7 @@ import os
 import pytest
 from bs4 import BeautifulSoup
 
-from utils.langchain.document_processor import DocumentProcessor
+from llkms.utils.langchain.document_processor import DocumentProcessor
 
 
 def test_process_text():
