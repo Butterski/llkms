@@ -1,18 +1,20 @@
+import argparse
+import asyncio
 import os
 import shutil
 from pathlib import Path
-import argparse
-import asyncio
 from typing import List
 
 from dotenv import load_dotenv
 
 from llkms.utils.aws.s3_client import S3Client
-from llkms.utils.langchain.document_processor import DocumentProcessor
-from llkms.utils.langchain.rag_pipeline import RAGPipeline
-from llkms.utils.vector_store_manager import VectorStoreManager
-from llkms.utils.logger import logger
 from llkms.utils.interactive_query import run_interactive_query
+from llkms.utils.langchain.document_processor import DocumentProcessor
+from llkms.utils.langchain.model_factory import ModelConfig, ModelFactory
+from llkms.utils.langchain.rag_pipeline import RAGPipeline
+from llkms.utils.logger import logger
+from llkms.utils.vector_store_manager import VectorStoreManager
+
 
 class DocumentProcessingPipeline:
     def __init__(self):
@@ -34,18 +36,18 @@ class DocumentProcessingPipeline:
             "prompt_tokens": 0,
             "completion_tokens": 0,
             "total_cost": 0.0,
-            "successful_requests": 0
+            "successful_requests": 0,
         }
 
-    async def process_s3_bucket_async(self, bucket: str, prefix: str = "", model_provider: str = "deepseek",
-                                        model: str = "deepseek-chat", reindex: bool = False) -> RAGPipeline:
+    async def process_s3_bucket_async(
+        self, bucket: str, prefix: str = "", model_config: ModelConfig = None, reindex: bool = False
+    ) -> RAGPipeline:
         """Process files from an S3 bucket asynchronously or load a cached vector store.
 
         Args:
             bucket (str): S3 bucket name.
             prefix (str, optional): Prefix filter. Defaults to "".
-            model_provider (str, optional): Model provider. Defaults to "deepseek".
-            model (str, optional): Model name. Defaults to "deepseek-chat".
+            model_config (ModelConfig, optional): Model configuration. Defaults to None.
             reindex (bool, optional): Force reindexing if True. Defaults to False.
 
         Returns:
@@ -55,7 +57,7 @@ class DocumentProcessingPipeline:
             logger.info("Loading local vector store from cache.")
             vector_store = self.vector_cache.load(self.doc_processor.embeddings)
             if vector_store is not None:
-                return RAGPipeline(vector_store, model_provider=model_provider, model=model)
+                return RAGPipeline(vector_store, model_config=model_config)
 
         logger.info(f"Starting to process bucket {bucket} with prefix '{prefix}'")
         files = self.s3_client.list_files(bucket, prefix)
@@ -83,7 +85,7 @@ class DocumentProcessingPipeline:
         self._update_usage(usage)
         self.vector_cache.save(vector_store)
         logger.info("Vector store saved locally.")
-        return RAGPipeline(vector_store, model_provider=model_provider, model=model)
+        return RAGPipeline(vector_store, model_config=model_config)
 
     async def async_process_file(self, bucket: str, file_key: str) -> List:
         """Asynchronously download and process a single file from S3.
@@ -137,36 +139,55 @@ class DocumentProcessingPipeline:
             shutil.rmtree(self.temp_dir)
             logger.debug("Temporary directory removed")
 
-def parse_args():
-    """Parse command-line arguments.
 
-    Returns:
-        argparse.Namespace: Parsed arguments.
-    """
-    parser = argparse.ArgumentParser(description='LLKMS - Language Learning Knowledge Management System')
-    parser.add_argument('--model-provider', type=str, default='deepseek',
-                        choices=['deepseek', 'openai'],
-                        help='The model provider to use (default: deepseek)')
-    parser.add_argument('--model', type=str, default='deepseek-chat',
-                        help='The specific model to use (default: deepseek-chat)')
-    parser.add_argument('--reindex', action="store_true",
-                        help='Force reindexing of the vector store even if a local cache exists')
+def parse_args():
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(description="LLKMS - Language Learning Knowledge Management System")
+    parser.add_argument(
+        "--model-provider",
+        type=str,
+        default="deepseek",
+        choices=["deepseek", "openai"],
+        help="The model provider to use (default: deepseek)",
+    )
+    parser.add_argument(
+        "--model", type=str, default="deepseek-chat", help="The specific model to use (default: deepseek-chat)"
+    )
+    parser.add_argument("--temperature", type=float, default=0.7, help="Model temperature (0.0-1.0)")
+    parser.add_argument("--max-tokens", type=int, default=1024, help="Maximum tokens for model response")
+    parser.add_argument("--api-key", type=str, help="Optional API key (otherwise reads from env)")
+    parser.add_argument("--api-base", type=str, help="Optional API base URL")
+    parser.add_argument(
+        "--reindex", action="store_true", help="Force reindexing of the vector store even if a local cache exists"
+    )
     return parser.parse_args()
+
+
+def create_model_config(args) -> ModelConfig:
+    """Create model configuration from arguments."""
+    return ModelConfig(
+        provider=args.model_provider,
+        model_name=args.model,
+        api_key=args.api_key,
+        api_base=args.api_base,
+        max_tokens=args.max_tokens,
+        temperature=args.temperature,
+    )
+
 
 def main():
     """Main entry point for the LLKMS application."""
     args = parse_args()
     logger.info(f"Starting LLKMS application with {args.model_provider} provider and {args.model} model")
     pipeline = DocumentProcessingPipeline()
+    model_config = create_model_config(args)
 
     try:
-        rag = asyncio.run(pipeline.process_s3_bucket_async(
-            bucket="eng-llkms",
-            prefix="lectures",
-            model_provider=args.model_provider,
-            model=args.model,
-            reindex=args.reindex
-        ))
+        rag = asyncio.run(
+            pipeline.process_s3_bucket_async(
+                bucket="eng-llkms", prefix="lectures", model_config=model_config, reindex=args.reindex
+            )
+        )
         # Replace interactive query loop with new module invocation
         run_interactive_query(rag, pipeline._update_usage)
     except Exception as e:
@@ -184,6 +205,7 @@ def main():
         summary += f"\nTotal Cost (USD): ${usage['total_cost']:.4f}"
         print(summary)
         logger.info(summary)
+
 
 if __name__ == "__main__":
     main()

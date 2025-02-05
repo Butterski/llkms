@@ -8,34 +8,25 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
 
+from llkms.utils.langchain.model_factory import ModelConfig, ModelFactory
 from llkms.utils.logger import logger
 
 
 class RAGPipeline:
-    def __init__(self, vector_store: FAISS, model_provider: str = "deepseek", model: str = "deepseek-chat"):
+    def __init__(self, vector_store: FAISS, model_config: ModelConfig):
         """
         Initialize the RAGPipeline.
 
         Args:
             vector_store (FAISS): The vector store instance.
-            model_provider (str, optional): Provider of the model. Defaults to "deepseek".
-            model (str, optional): Model name. Defaults to "deepseek-chat".
+            model_config (ModelConfig): Configuration for the language model.
         """
         self.vector_store = vector_store
-        self.model = model
-        
-        if model_provider == "deepseek":
-            self.llm = ChatOpenAI(
-                model=model,
-                openai_api_key=os.getenv("DEEPSEEK_API_KEY"),
-                openai_api_base='https://api.deepseek.com',
-                max_tokens=1024
-            )
-        else:  # OpenAI
-            self.llm = ChatOpenAI(model="o1-mini")
-        
+        self.llm = ModelFactory.create_model(model_config)
+
         # Define RAG prompt
-        self.prompt = PromptTemplate.from_template("""
+        self.prompt = PromptTemplate.from_template(
+            """
         Answer the question based on the following context. If you don't know 
         the answer, just say you don't know. Use three sentences maximum.
                                                    
@@ -44,8 +35,9 @@ class RAGPipeline:
         Context: {context}
         Question: {question}
         
-        Answer:""")
-        
+        Answer:"""
+        )
+
         # Build the RAG chain
         self.chain = (
             {"context": self.vector_store.as_retriever(), "question": RunnablePassthrough()}
@@ -53,7 +45,7 @@ class RAGPipeline:
             | self.llm
             | StrOutputParser()
         )
-    
+
     def get_retrieved_docs(self, question: str):
         """
         Retrieve the documents used as context for the given question.
@@ -65,7 +57,7 @@ class RAGPipeline:
             List[Document]: List of retrieved documents with metadata.
         """
         return self.vector_store.as_retriever().get_relevant_documents(question)
-    
+
     def query(self, question: str) -> Tuple[str, Dict[str, Any]]:
         """
         Execute the RAG query.
@@ -84,5 +76,5 @@ class RAGPipeline:
                 "prompt_tokens": cb.prompt_tokens,
                 "completion_tokens": cb.completion_tokens,
                 "total_cost": cb.total_cost,
-                "successful_requests": cb.successful_requests
+                "successful_requests": cb.successful_requests,
             }
