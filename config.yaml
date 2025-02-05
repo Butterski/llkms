@@ -1,0 +1,21 @@
+aws:
+  access_key_id: ${AWS_ACCESS_KEY_ID}      # Environment variable placeholder
+  secret_access_key: ${AWS_SECRET_ACCESS_KEY}  # Environment variable placeholder
+  bucket: eng-llkms
+  prefix: lectures
+
+model:
+  provider: deepseek
+  model: deepseek-chat
+  api_key: ${API_KEY}         # Environment variable placeholder
+  api_base: "https://api.deepseek.com"
+  temperature: 0.7
+  max_tokens: 1024
+
+logging:
+  level: INFO
+  file: logs/llkms.log
+
+app:
+  temp_dir: temp
+  vector_store_cache: vector_store_cache
