@@ -9,18 +9,22 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     install_requires=[
-        "pytest",
         "langchain",
-        "faiss-cpu",
-        "python-docx",
-        "beautifulsoup4",
-        "boto3",
+        "langchain-community",
+        "langchain-openai",
         "python-dotenv",
-        "Pillow",
+        "boto3",
+        "unstructured",
+        "faiss-cpu",
+        "pillow",
+        "pypdf2",
+        "python-docx",
+        "bs4",
+        "pyyaml",
     ],
     entry_points={
         "console_scripts": [
-            "llkms=llkms.main:main",  # updated entry point to match new package structure
+            "llkms=llkms.main:main",
         ],
     },
     classifiers=[
