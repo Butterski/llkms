@@ -32,12 +32,14 @@ class RAGPipeline:
                 max_tokens=1024
             )
         else:  # OpenAI
-            self.llm = ChatOpenAI(model=model)
+            self.llm = ChatOpenAI(model="o1-mini")
         
         # Define RAG prompt
         self.prompt = PromptTemplate.from_template("""
         Answer the question based on the following context. If you don't know 
         the answer, just say you don't know. Use three sentences maximum.
+                                                   
+        If the context is not enough to answer the question, say so and if you know the answer start message with 'Not enough context, but...'
         
         Context: {context}
         Question: {question}

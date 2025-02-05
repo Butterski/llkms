@@ -162,7 +162,7 @@ def main():
     try:
         rag = asyncio.run(pipeline.process_s3_bucket_async(
             bucket="eng-llkms",
-            prefix="knowledge",
+            prefix="lectures",
             model_provider=args.model_provider,
             model=args.model,
             reindex=args.reindex
