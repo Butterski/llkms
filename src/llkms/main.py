@@ -153,7 +153,7 @@ def parse_args():
     parser.add_argument(
         "--model", type=str, default="deepseek-chat", help="The specific model to use (default: deepseek-chat)"
     )
-    parser.add_argument("--temperature", type=float, default=0.7, help="Model temperature (0.0-1.0)")
+    parser.add_argument("--temperature", type=float, default=1, help="Model temperature (0.0-1.0)")
     parser.add_argument("--max-tokens", type=int, default=1024, help="Maximum tokens for model response")
     parser.add_argument("--api-key", type=str, help="Optional API key (otherwise reads from env)")
     parser.add_argument("--api-base", type=str, help="Optional API base URL")
