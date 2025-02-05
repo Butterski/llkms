@@ -98,7 +98,7 @@ class DocumentProcessingPipeline:
             List: Documents processed from the file.
         """
         logger.info(f"Processing file asynchronously: {file_key}")
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         relative_path = Path(file_key)
         local_path = self.temp_dir / relative_path
 
@@ -188,7 +188,6 @@ def main():
                 bucket="eng-llkms", prefix="lectures", model_config=model_config, reindex=args.reindex
             )
         )
-        # Replace interactive query loop with new module invocation
         run_interactive_query(rag, pipeline._update_usage)
     except Exception as e:
         logger.error(f"Application error: {e}")
