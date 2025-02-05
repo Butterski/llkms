@@ -203,7 +203,6 @@ def main():
         summary += f"\nCompletion Tokens: {usage['completion_tokens']:,}"
         summary += f"\nSuccessful Requests: {usage['successful_requests']}"
         summary += f"\nTotal Cost (USD): ${usage['total_cost']:.4f}"
-        print(summary)
         logger.info(summary)
 
 
