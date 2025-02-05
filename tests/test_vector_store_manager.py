@@ -3,7 +3,7 @@ import pickle
 import faiss
 import pytest
 
-from llkms.utils.vector_store_manager import VectorStoreManager
+from llkms.utils.langchain.vector_store_manager import VectorStoreManager
 
 
 class DummyFAISS:

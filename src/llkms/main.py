@@ -13,7 +13,7 @@ from llkms.utils.langchain.document_processor import DocumentProcessor
 from llkms.utils.langchain.model_factory import ModelConfig, ModelFactory
 from llkms.utils.langchain.rag_pipeline import RAGPipeline
 from llkms.utils.logger import logger
-from llkms.utils.vector_store_manager import VectorStoreManager
+from llkms.utils.langchain.vector_store_manager import VectorStoreManager
 
 
 class DocumentProcessingPipeline:
