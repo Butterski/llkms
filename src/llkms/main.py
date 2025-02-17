@@ -111,9 +111,8 @@ def main_menu(config: Dict, args):
 
         if choice == "RAG Pipeline with S3":
             try:
-                # Run async setup first
                 rag, pipeline = asyncio.run(run_rag_pipeline(config, args))
-                # Then run sync interactive query
+                
                 try:
                     run_interactive_query(rag, pipeline._update_usage)
                 finally:
