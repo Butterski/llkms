@@ -22,12 +22,12 @@ def setup_logger():
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(file_formatter)
     
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(console_formatter)
+    # console_handler = logging.StreamHandler(sys.stdout)
+    # console_handler.setLevel(logging.INFO)
+    # console_handler.setFormatter(console_formatter)
     
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # logger.addHandler(console_handler)
     
     return logger
 
