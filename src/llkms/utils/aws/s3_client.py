@@ -31,9 +31,12 @@ class S3Client:
             List[str]: List of file keys.
         """
         logger.info(f"Listing files in bucket {bucket} with prefix '{prefix}'")
+
         response = self.client.list_objects_v2(Bucket=bucket, Prefix=prefix)
         files = [obj["Key"] for obj in response.get("Contents", [])]
+
         logger.debug(f"Found {len(files)} files")
+        
         return files
 
     def download_file(self, bucket: str, key: str, local_path: Path):
@@ -50,10 +53,8 @@ class S3Client:
         """
         try:
             logger.debug(f"Downloading {key} to {local_path}")
-            # Create directory structure
             local_path.parent.mkdir(parents=True, exist_ok=True)
 
-            # If file exists, remove it first
             if local_path.exists():
                 logger.debug(f"Removing existing file: {local_path}")
                 local_path.unlink()
