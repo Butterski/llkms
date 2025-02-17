@@ -1,7 +1,8 @@
+from llkms.utils.langchain.rag_pipeline import RAGPipeline
 from llkms.utils.logger import logger
 import questionary
 
-def run_interactive_query(rag, update_usage_callback):
+def run_interactive_query(rag: RAGPipeline, update_usage_callback):
     """
     Run an interactive query loop.
 
