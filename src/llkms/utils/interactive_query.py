@@ -25,10 +25,10 @@ def run_interactive_query(rag, update_usage_callback):
             answer, usage = rag.query(question)
             update_usage_callback(usage)
             
-            print("\n" + "─" * 80)
-            questionary.print("Answer:", style="bold")
-            print(answer)
-            print("─" * 80 + "\n")
+            questionary.print("\n" + "─" * 80)
+            questionary.questionary.print("Answer:", style="bold")
+            questionary.print(answer)
+            questionary.print("─" * 80 + "\n")
             
             show_docs = questionary.confirm(
                 "Would you like to see the retrieved documents?",
@@ -38,13 +38,13 @@ def run_interactive_query(rag, update_usage_callback):
             if show_docs:
                 docs = rag.get_retrieved_docs(question)
                 for idx, doc in enumerate(docs):
-                    print(f"\n📄 Document {idx + 1}:")
-                    print("─" * 40)
-                    print(doc.page_content)
-                    print("─" * 40)
+                    questionary.print(f"\n📄 Document {idx + 1}:")
+                    questionary.print("─" * 40)
+                    questionary.print(doc.page_content)
+                    questionary.print("─" * 40)
         except Exception as e:
             logger.error(f"Error processing question: {e}")
-            questionary.print(
+            questionary.questionary.print(
                 f"Error processing question: {e}",
                 style="bold red"
             )
