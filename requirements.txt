@@ -10,3 +10,4 @@ pypdf2
 python-docx
 bs4
 pyyaml
+questionary

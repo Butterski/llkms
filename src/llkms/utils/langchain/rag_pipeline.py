@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, Tuple
 
 from langchain.prompts import PromptTemplate
@@ -6,7 +5,6 @@ from langchain_community.callbacks import get_openai_callback
 from langchain_community.vectorstores import FAISS
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import ChatOpenAI
 
 from llkms.utils.langchain.model_factory import ModelConfig, ModelFactory
 from llkms.utils.logger import logger

@@ -16,14 +16,19 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 dependencies = [
-    "pytest",
     "langchain",
-    "faiss-cpu",
-    "python-docx",
-    "beautifulsoup4",
-    "boto3",
+    "langchain-community",
+    "langchain-openai",
     "python-dotenv",
-    "Pillow"
+    "boto3",
+    "unstructured",
+    "faiss-cpu",
+    "pillow",
+    "pypdf2",
+    "python-docx",
+    "bs4",
+    "pyyaml",
+    "questionary",
 ]
 
 [project.scripts]

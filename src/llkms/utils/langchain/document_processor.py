@@ -109,7 +109,9 @@ class DocumentProcessor:
             logger.error(f"Error processing HTML file {file_path}: {str(e)}")
             return []
 
-    def create_vector_store(self, documents: List[Document], model_provider: str = "deepseek", model: str = "deepseek-chat") -> Tuple[FAISS, Dict[str, Any]]:
+    def create_vector_store(
+        self, documents: List[Document], model_provider: str = "deepseek", model: str = "deepseek-chat"
+    ) -> Tuple[FAISS, Dict[str, Any]]:
         """
         Create a FAISS vector store from documents.
 
@@ -127,9 +129,10 @@ class DocumentProcessor:
             return vector_store, {
                 "total_tokens": cb.total_tokens,
                 "total_cost": cb.total_cost,
-                "successful_requests": cb.successful_requests
+                "successful_requests": cb.successful_requests,
             }
-        
+
+
 class DocumentProcessingPipeline:
     def __init__(self):
         """Initialize DocumentProcessingPipeline by setting up S3 client, document processor, and temporary directories."""
@@ -174,14 +177,16 @@ class DocumentProcessingPipeline:
                 return RAGPipeline(vector_store, model_config=model_config)
 
         logger.info(f"Starting to process bucket {bucket} with prefix '{prefix}'")
+
         files = self.s3_client.list_files(bucket, prefix)
         tasks = []
+
         for file_key in files:
             if file_key.endswith("/"):
                 logger.debug(f"Skipping directory: {file_key}")
                 continue
             tasks.append(self.async_process_file(bucket, file_key))
-        # Gather results concurrently
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
         documents = []
         for result in results:
@@ -195,10 +200,14 @@ class DocumentProcessingPipeline:
             raise ValueError("No documents were successfully processed")
 
         logger.info(f"Creating vector store with {len(documents)} documents")
+
         vector_store, usage = self.doc_processor.create_vector_store(documents)
+
         self._update_usage(usage)
         self.vector_cache.save(vector_store)
+
         logger.info("Vector store saved locally.")
+
         return RAGPipeline(vector_store, model_config=model_config)
 
     async def async_process_file(self, bucket: str, file_key: str) -> List:
@@ -216,7 +225,6 @@ class DocumentProcessingPipeline:
         relative_path = Path(file_key)
         local_path = self.temp_dir / relative_path
 
-        # Download file using run_in_executor (since boto3 is synchronous)
         await loop.run_in_executor(None, self.s3_client.download_file, bucket, file_key, local_path)
 
         # Choose processing method based on file extension
