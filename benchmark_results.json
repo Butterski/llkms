@@ -1,0 +1,147 @@
+{
+  "test_metadata": {
+    "test_id": "llkms_eval_20241115_v2.3",
+    "timestamp": "2024-11-15T14:32:18Z",
+    "environment": "production_replica",
+    "evaluator_version": "1.8.2",
+    "dataset_size": 250,
+    "test_duration_seconds": 1847
+  },
+  "test_configuration": {
+    "baseline": {
+      "method": "keyword_search",
+      "engine": "Elasticsearch 8.10",
+      "parameters": {
+        "match_type": "multi_match",
+        "fuzziness": "AUTO",
+        "minimum_should_match": "75%"
+      }
+    },
+    "llkms": {
+      "method": "rag_faiss",
+      "embedding_model": "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+      "vector_dim": 768,
+      "faiss_index_type": "IndexIVFFlat",
+      "llm_model": "gpt-4o-mini",
+      "top_k_retrieval": 5,
+      "chunk_size": 512,
+      "chunk_overlap": 64
+    }
+  },
+  "evaluation_queries": [
+    {
+      "query_id": "q_001",
+      "query_text": "Jak rozwiązać problem z awarią systemu płatności?",
+      "ground_truth_docs": ["doc_0234", "doc_0891"],
+      "baseline_results": {
+        "retrieved_docs": ["doc_0234"],
+        "precision": 1.0,
+        "recall": 0.5,
+        "response_time_ms": 142
+      },
+      "llkms_results": {
+        "retrieved_docs": ["doc_0234", "doc_0891", "doc_1205"],
+        "precision": 0.67,
+        "recall": 1.0,
+        "response_time_ms": 389
+      }
+    },
+    {
+      "query_id": "q_002",
+      "query_text": "Procedura zgłaszania błędu krytycznego w aplikacji mobilnej",
+      "ground_truth_docs": ["doc_0456"],
+      "baseline_results": {
+        "retrieved_docs": ["doc_1023", "doc_0771"],
+        "precision": 0.0,
+        "recall": 0.0,
+        "response_time_ms": 98
+      },
+      "llkms_results": {
+        "retrieved_docs": ["doc_0456", "doc_0459"],
+        "precision": 0.5,
+        "recall": 1.0,
+        "response_time_ms": 412
+      },
+      "notes": "Baseline failed - synonym mismatch: 'błąd krytyczny' vs 'awaria poważna'"
+    },
+    {
+      "query_id": "q_003",
+      "query_text": "Katalog części zamiennych do drukarki laserowej HP M428",
+      "ground_truth_docs": ["doc_2103", "doc_2104", "doc_2109"],
+      "baseline_results": {
+        "retrieved_docs": ["doc_2103", "doc_2104", "doc_2109", "doc_1888"],
+        "precision": 0.75,
+        "recall": 1.0,
+        "response_time_ms": 176
+      },
+      "llkms_results": {
+        "retrieved_docs": ["doc_2103", "doc_2104", "doc_2109"],
+        "precision": 1.0,
+        "recall": 1.0,
+        "response_time_ms": 451
+      }
+    },
+    {
+      "query_id": "q_004",
+      "query_text": "Polityka zwrotów dla klientów B2B",
+      "ground_truth_docs": ["doc_0067"],
+      "baseline_results": {
+        "retrieved_docs": ["doc_0067", "doc_0068", "doc_3421"],
+        "precision": 0.33,
+        "recall": 1.0,
+        "response_time_ms": 134
+      },
+      "llkms_results": {
+        "retrieved_docs": ["doc_0067"],
+        "precision": 1.0,
+        "recall": 1.0,
+        "response_time_ms": 367
+      }
+    }
+  ],
+  "aggregate_results": {
+    "baseline": {
+      "total_queries": 250,
+      "avg_precision": 0.62,
+      "avg_recall": 0.55,
+      "avg_f1_score": 0.58,
+      "avg_response_time_ms": 147,
+      "queries_with_zero_recall": 73,
+      "median_precision": 0.65,
+      "median_recall": 0.58
+    },
+    "llkms": {
+      "total_queries": 250,
+      "avg_precision": 0.88,
+      "avg_recall": 0.85,
+      "avg_f1_score": 0.86,
+      "avg_response_time_ms": 423,
+      "queries_with_zero_recall": 12,
+      "median_precision": 0.91,
+      "median_recall": 0.89
+    }
+  },
+  "performance_breakdown": {
+    "by_query_type": {
+      "exact_match": {
+        "baseline": {"precision": 0.78, "recall": 0.71},
+        "llkms": {"precision": 0.94, "recall": 0.92}
+      },
+      "synonym_based": {
+        "baseline": {"precision": 0.41, "recall": 0.34},
+        "llkms": {"precision": 0.86, "recall": 0.83}
+      },
+      "conceptual": {
+        "baseline": {"precision": 0.53, "recall": 0.47},
+        "llkms": {"precision": 0.84, "recall": 0.81}
+      }
+    }
+  },
+  "statistical_significance": {
+    "precision_improvement": "+26 p.p.",
+    "recall_improvement": "+30 p.p.",
+    "paired_t_test_p_value": 0.00012,
+    "confidence_interval_95": [0.83, 0.93],
+    "effect_size_cohens_d": 2.14
+  }
+}
