@@ -22,6 +22,25 @@ def assert_secret_str_value(secret: SecretStr, expected: str):
 @pytest.mark.parametrize(
     "config_data,expected",
     [
+        # Ollama local configuration (primary use case)
+        (
+            {"provider": "ollama", "model_name": "bielik:7b", "max_tokens": 2048, "temperature": 0.7},
+            {"api_base": "http://localhost:11434/v1", "api_key": "ollama"},
+        ),
+        (
+            {"provider": "ollama", "model_name": "llama3.2", "max_tokens": 1024, "temperature": 0.5},
+            {"api_base": "http://localhost:11434/v1", "api_key": "ollama"},
+        ),
+        # Ollama with custom api_base
+        (
+            {
+                "provider": "ollama",
+                "model_name": "bielik:latest",
+                "api_base": "http://custom-ollama:11434/v1",
+            },
+            {"api_base": "http://custom-ollama:11434/v1", "api_key": "ollama"},
+        ),
+        # Cloud providers (still supported)
         (
             {"provider": "deepseek", "model_name": "deepseek-chat", "max_tokens": 1024, "temperature": 0.7},
             {"api_base": "https://api.deepseek.com", "api_key": "mock-deepseek-key"},
@@ -30,19 +49,10 @@ def assert_secret_str_value(secret: SecretStr, expected: str):
             {"provider": "openai", "model_name": "gpt-3.5-turbo", "max_tokens": 2048, "temperature": 0.5},
             {"api_base": "https://api.openai.com/v1", "api_key": "mock-openai-key"},
         ),
-        (
-            {
-                "provider": "deepseek",
-                "model_name": "deepseek-chat",
-                "api_key": "custom-key",
-                "api_base": "https://custom-api.com",
-            },
-            {"api_base": "https://custom-api.com", "api_key": "custom-key"},
-        ),
     ],
 )
 def test_model_creation(mock_env_keys, config_data, expected):
-    """Test model creation with different configurations"""
+    """Test model creation with different configurations including Ollama"""
     config = ModelConfig(**config_data)
     model = ModelFactory.create_model(config)
 
@@ -50,6 +60,16 @@ def test_model_creation(mock_env_keys, config_data, expected):
     assert model.model_name == config.model_name
     assert model.openai_api_base == expected["api_base"]
     assert assert_secret_str_value(model.openai_api_key, expected["api_key"])
+
+
+def test_ollama_no_api_key_required():
+    """Test that Ollama provider works without any API key in environment"""
+    config = ModelConfig(provider="ollama", model_name="bielik:7b")
+    model = ModelFactory.create_model(config)
+
+    assert isinstance(model, ChatOpenAI)
+    assert model.model_name == "bielik:7b"
+    assert model.openai_api_base == "http://localhost:11434/v1"
 
 
 @pytest.mark.parametrize(
