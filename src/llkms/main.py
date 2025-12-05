@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 import questionary
 import yaml
@@ -58,22 +58,29 @@ def create_model_config(config: Dict) -> ModelConfig:
     return ModelConfig(
         provider=config["model"]["provider"],
         model_name=config["model"]["model"],
-        api_key=config["model"]["api_key"],
-        api_base=config["model"]["api_base"],
-        max_tokens=config["model"]["max_tokens"],
-        temperature=config["model"]["temperature"],
+        api_key=config["model"].get("api_key", ""),
+        api_base=config["model"].get("api_base", ""),
+        max_tokens=config["model"].get("max_tokens", 1024),
+        temperature=config["model"].get("temperature", 0.7),
     )
 
 
-async def summarize_document(config: Dict):
-    """Placeholder for document summarization functionality."""
-    print("Document summarization - Coming soon!")
-    input("Press Enter to continue...")
+def create_embedding_config(config: Dict) -> Optional[Dict[str, str]]:
+    """Create embedding configuration from config file."""
+    if "embeddings" not in config:
+        return None
+
+    return {
+        "provider": config["embeddings"].get("provider", "openai"),
+        "model": config["embeddings"].get("model", "text-embedding-3-small"),
+        "api_base": config["embeddings"].get("api_base", "http://localhost:11434"),
+    }
 
 
 async def run_rag_pipeline(config: Dict, args):
     """Run the RAG pipeline with S3 integration and return the RAG instance."""
-    pipeline = DocumentProcessingPipeline()
+    embedding_config = create_embedding_config(config)
+    pipeline = DocumentProcessingPipeline(embedding_config=embedding_config)
     model_config = create_model_config(config)
 
     try:
@@ -104,15 +111,12 @@ def display_usage_summary(usage: Dict):
 def main_menu(config: Dict, args):
     """Display and handle the main menu."""
     while True:
-        choice = questionary.select(
-            "Choose an action:",
-            choices=["RAG Pipeline with S3", "Summarize Document", "Exit"]
-        ).ask()
+        choice = questionary.select("Choose an action:", choices=["RAG Pipeline with S3", "Exit"]).ask()
 
         if choice == "RAG Pipeline with S3":
             try:
                 rag, pipeline = asyncio.run(run_rag_pipeline(config, args))
-                
+
                 try:
                     run_interactive_query(rag, pipeline._update_usage)
                 finally:
@@ -120,8 +124,6 @@ def main_menu(config: Dict, args):
                     display_usage_summary(pipeline.total_usage)
             except Exception as e:
                 logger.error(f"Error in RAG pipeline: {e}")
-        elif choice == "Summarize Document":
-            asyncio.run(summarize_document(config))
         elif choice == "Exit":
             break
 
@@ -134,7 +136,10 @@ def main():
 
     if not config["aws"]["access_key_id"] or not config["aws"]["secret_access_key"]:
         raise ValueError("AWS credentials not found in environment or .env file")
-    if not config["model"]["api_key"]:
+
+    # Only require API key for non-Ollama providers
+    model_provider = config["model"].get("provider", "")
+    if model_provider != "ollama" and not config["model"].get("api_key"):
         raise ValueError("Model API key not found in environment or .env file")
 
     logger.info(

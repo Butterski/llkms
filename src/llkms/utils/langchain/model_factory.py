@@ -27,6 +27,10 @@ class ModelFactory:
             "api_base": "https://api.openai.com/v1",
             "api_key_env": "OPENAI_API_KEY",
         },
+        "ollama": {
+            "api_base": "http://localhost:11434/v1",
+            "api_key_env": None,  # Ollama doesn't require API key
+        },
     }
 
     @classmethod
@@ -35,9 +39,13 @@ class ModelFactory:
         if not provider_config:
             raise ValueError(f"Unsupported provider: {config.provider}")
 
-        api_key = config.api_key or os.getenv(provider_config["api_key_env"])
-        if not api_key:
-            raise ValueError(f"API key not found for provider {config.provider}")
+        # Ollama doesn't require API key
+        if config.provider == "ollama":
+            api_key = "ollama"  # Placeholder for Ollama
+        else:
+            api_key = config.api_key or os.getenv(provider_config["api_key_env"])
+            if not api_key:
+                raise ValueError(f"API key not found for provider {config.provider}")
 
         logger.info(f"Creating model {config.model_name} with provider {config.provider}")
         return ChatOpenAI(

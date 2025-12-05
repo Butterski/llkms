@@ -1,6 +1,6 @@
-import os
 import pickle
 from pathlib import Path
+from typing import Optional
 
 import faiss
 from langchain_community.docstore.in_memory import InMemoryDocstore
@@ -40,7 +40,7 @@ class VectorStoreManager:
         with open(self.docs_path, "wb") as f:
             pickle.dump(vector_store.docstore._dict, f)
 
-    def load(self, embeddings) -> FAISS:
+    def load(self, embeddings) -> Optional[FAISS]:
         """
         Load the vector store from disk.
 
@@ -48,7 +48,7 @@ class VectorStoreManager:
             embeddings: The embedding model used for reconstructing the vector store.
 
         Returns:
-            FAISS: The loaded vector store.
+            Optional[FAISS]: The loaded vector store, or None if cache doesn't exist.
         """
         if not self.exists():
             return None

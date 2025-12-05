@@ -1,20 +1,21 @@
 import asyncio
 import os
-from pathlib import Path
 import shutil
-from typing import Any, Dict, List, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 from dotenv import load_dotenv
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.callbacks import get_openai_callback
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredImageLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
-from PIL import Image
+
 from llkms.utils.aws.s3_client import S3Client
+from llkms.utils.langchain.embeddings import OllamaEmbeddings
 from llkms.utils.langchain.model_factory import ModelConfig
 from llkms.utils.langchain.rag_pipeline import RAGPipeline
 from llkms.utils.langchain.vector_store_manager import VectorStoreManager
@@ -22,15 +23,33 @@ from llkms.utils.logger import logger
 
 
 class DocumentProcessor:
-    def __init__(self, embedding_model: str = "text-embedding-3-small"):
+    def __init__(self, embedding_config: Optional[Dict[str, str]] = None):
         """
         Initialize DocumentProcessor.
 
         Args:
-            embedding_model (str, optional): The embedding model to use. Defaults to "text-embedding-3-small".
+            embedding_config (dict, optional): Embedding configuration with keys:
+                - provider: "openai" or "ollama"
+                - model: Model name (e.g., "text-embedding-3-small" or "nomic-embed-text")
+                - api_base: (optional) Custom API base URL for Ollama
         """
-        self.embedding_model = embedding_model
-        self.embeddings = OpenAIEmbeddings(model=embedding_model)
+        if embedding_config is None:
+            embedding_config = {"provider": "openai", "model": "text-embedding-3-small"}
+
+        self.embedding_config = embedding_config
+        provider = embedding_config.get("provider", "openai")
+        model = embedding_config.get("model")
+
+        if provider == "ollama":
+            api_base = embedding_config.get("api_base", "http://localhost:11434")
+            self.embeddings = OllamaEmbeddings(model=model or "nomic-embed-text", base_url=api_base)
+            self.is_local = True
+            logger.info(f"Using Ollama embeddings with model: {model or 'nomic-embed-text'}")
+        else:
+            self.embeddings = OpenAIEmbeddings(model=model or "text-embedding-3-small")
+            self.is_local = False
+            logger.info(f"Using OpenAI embeddings with model: {model or 'text-embedding-3-small'}")
+
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
     def process_text(self, content: str) -> List[Document]:
@@ -109,37 +128,51 @@ class DocumentProcessor:
             logger.error(f"Error processing HTML file {file_path}: {str(e)}")
             return []
 
-    def create_vector_store(
-        self, documents: List[Document], model_provider: str = "deepseek", model: str = "deepseek-chat"
-    ) -> Tuple[FAISS, Dict[str, Any]]:
+    def create_vector_store(self, documents: List[Document]) -> Tuple[FAISS, Dict[str, Any]]:
         """
         Create a FAISS vector store from documents.
 
         Args:
             documents (List[Document]): List of documents to index.
-            model_provider (str, optional): The provider of the model. Defaults to "deepseek".
-            model (str, optional): The model name. Defaults to "deepseek-chat".
 
         Returns:
             Tuple[FAISS, Dict[str, Any]]: The vector store and usage statistics.
         """
-        with get_openai_callback() as cb:
+        if self.is_local:
+            # Local embeddings don't use OpenAI callback
             vector_store = FAISS.from_documents(documents, self.embeddings)
-            logger.info(f"Created vector store using {model_provider} {model}")
+            logger.info(f"Created vector store with {len(documents)} document chunks (local embeddings)")
             return vector_store, {
-                "total_tokens": cb.total_tokens,
-                "total_cost": cb.total_cost,
-                "successful_requests": cb.successful_requests,
+                "total_tokens": 0,
+                "total_cost": 0.0,
+                "successful_requests": len(documents),
             }
+        else:
+            with get_openai_callback() as cb:
+                vector_store = FAISS.from_documents(documents, self.embeddings)
+                logger.info(f"Created vector store with {len(documents)} document chunks")
+                return vector_store, {
+                    "total_tokens": cb.total_tokens,
+                    "total_cost": cb.total_cost,
+                    "successful_requests": cb.successful_requests,
+                }
 
 
 class DocumentProcessingPipeline:
-    def __init__(self):
-        """Initialize DocumentProcessingPipeline by setting up S3 client, document processor, and temporary directories."""
+    def __init__(self, embedding_config: Optional[Dict[str, str]] = None):
+        """
+        Initialize DocumentProcessingPipeline.
+
+        Args:
+            embedding_config (dict, optional): Embedding configuration with keys:
+                - provider: "openai" or "ollama"
+                - model: Model name
+                - api_base: (optional) Custom API base URL
+        """
         load_dotenv(override=True)
         os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
         self.s3_client = S3Client()
-        self.doc_processor = DocumentProcessor()
+        self.doc_processor = DocumentProcessor(embedding_config=embedding_config)
         self.temp_dir = Path("temp")
         self.vector_cache = VectorStoreManager()
 

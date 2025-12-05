@@ -1,5 +1,4 @@
 import os
-import shutil
 from pathlib import Path
 from typing import List
 
@@ -7,6 +6,7 @@ import boto3
 from dotenv import load_dotenv
 
 from llkms.utils.logger import logger
+
 
 class S3Client:
     def __init__(self):
@@ -36,7 +36,7 @@ class S3Client:
         files = [obj["Key"] for obj in response.get("Contents", [])]
 
         logger.debug(f"Found {len(files)} files")
-        
+
         return files
 
     def download_file(self, bucket: str, key: str, local_path: Path):
