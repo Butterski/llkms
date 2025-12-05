@@ -11,3 +11,4 @@ python-docx
 bs4
 pyyaml
 questionary
+requests
