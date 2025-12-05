@@ -1,12 +1,17 @@
+# Local Polish Language Model Configuration
+# LLM: Ollama with bielik:latest (Polish LLM)
+# Embeddings: Ollama with mxbai-embed-large (better quality, larger)
+# Storage: AWS S3
+
 aws:
   access_key_id: ${AWS_ACCESS_KEY_ID}
   secret_access_key: ${AWS_SECRET_ACCESS_KEY}
   bucket: eng-llkms
-  prefix: knowledge-dsw
+  prefix: knowledge
 
 model:
   provider: ollama
-  model: mwiewior/bielik:latest
+  model: bielik:latest
   api_key: ""
   api_base: "http://localhost:11434/v1"
   temperature: 0.7

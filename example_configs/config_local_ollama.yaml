@@ -1,20 +1,25 @@
+# Full Local Configuration
+# LLM: Ollama with bielik:7b (Polish language model)
+# Embeddings: Ollama with nomic-embed-text
+# Storage: AWS S3
+
 aws:
   access_key_id: ${AWS_ACCESS_KEY_ID}
   secret_access_key: ${AWS_SECRET_ACCESS_KEY}
   bucket: eng-llkms
-  prefix: knowledge-dsw
+  prefix: knowledge
 
 model:
   provider: ollama
-  model: mwiewior/bielik:latest
-  api_key: ""
+  model: bielik:7b
+  api_key: ""  # Not required for Ollama
   api_base: "http://localhost:11434/v1"
   temperature: 0.7
   max_tokens: 2048
 
 embeddings:
   provider: ollama
-  model: mxbai-embed-large
+  model: nomic-embed-text
   api_base: "http://localhost:11434"
 
 app:

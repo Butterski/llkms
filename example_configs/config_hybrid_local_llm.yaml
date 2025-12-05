@@ -1,21 +1,26 @@
+# Hybrid Configuration
+# LLM: Ollama with llama3.2 (local)
+# Embeddings: OpenAI (cloud) - for better quality
+# Storage: AWS S3
+
 aws:
   access_key_id: ${AWS_ACCESS_KEY_ID}
   secret_access_key: ${AWS_SECRET_ACCESS_KEY}
   bucket: eng-llkms
-  prefix: knowledge-dsw
+  prefix: knowledge
 
 model:
   provider: ollama
-  model: mwiewior/bielik:latest
+  model: llama3.2
   api_key: ""
   api_base: "http://localhost:11434/v1"
   temperature: 0.7
   max_tokens: 2048
 
 embeddings:
-  provider: ollama
-  model: mxbai-embed-large
-  api_base: "http://localhost:11434"
+  provider: openai
+  model: text-embedding-3-small
+  # Uses OPENAI_API_KEY from environment
 
 app:
   temp_dir: temp
