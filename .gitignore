@@ -38,3 +38,5 @@ temp/
 logs/
 *.log
 vector_store_cache/
+benchmark_cache/
+artifacts/

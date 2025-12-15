@@ -1,0 +1,26 @@
+# Full Cloud Configuration with OpenAI
+# LLM: OpenAI GPT-4
+# Embeddings: OpenAI text-embedding-3-small
+# Storage: AWS S3
+
+aws:
+  access_key_id: ${AWS_ACCESS_KEY_ID}
+  secret_access_key: ${AWS_SECRET_ACCESS_KEY}
+  bucket: eng-llkms
+  prefix: knowledge
+
+model:
+  provider: openai
+  model: gpt-5-mini
+  api_key: ${OPENAI_API_KEY}
+  api_base: "https://api.openai.com/v1"
+  temperature: 0.7
+  max_tokens: 1024
+
+embeddings:
+  provider: openai
+  model: text-embedding-3-small
+
+app:
+  temp_dir: temp
+  vector_store_cache: vector_store_cache
