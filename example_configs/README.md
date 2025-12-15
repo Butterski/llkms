@@ -86,6 +86,17 @@ ollama pull mxbai-embed-large    # Higher quality, larger
 ollama list
 ```
 
+## RAG Configuration
+
+All configurations support a `rag` section to tune retrieval:
+
+```yaml
+rag:
+  retriever_k: 8  # Number of documents to retrieve for context (default: 8)
+```
+
+Increase `retriever_k` if the model needs more context to answer questions accurately.
+
 ## Notes
 
 - Vector store cache is NOT compatible between different embedding models

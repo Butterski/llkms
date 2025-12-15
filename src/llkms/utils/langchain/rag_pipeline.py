@@ -34,16 +34,18 @@ class RAGPipeline:
         
         Odpowiedź:"""
 
-    def __init__(self, vector_store: FAISS, model_config: ModelConfig):
+    def __init__(self, vector_store: FAISS, model_config: ModelConfig, retriever_k: int = 8):
         """
         Initialize the RAGPipeline.
 
         Args:
             vector_store (FAISS): The vector store instance.
             model_config (ModelConfig): Configuration for the language model.
+            retriever_k (int): Number of documents to retrieve for context.
         """
         self.vector_store = vector_store
         self.llm = ModelFactory.create_model(model_config)
+        self.retriever_k = retriever_k
 
         # Use Polish prompt for Bielik model
         is_polish_model = "bielik" in model_config.model_name.lower()
@@ -52,15 +54,15 @@ class RAGPipeline:
         if is_polish_model:
             logger.info("Using Polish prompt template for Bielik model")
 
+        logger.info(f"RAG retriever configured with k={retriever_k}")
+
         # Define RAG prompt
         self.prompt = PromptTemplate.from_template(prompt_template)
 
-        # Build the RAG chain
+        # Build the RAG chain with configurable k
+        self.retriever = self.vector_store.as_retriever(search_kwargs={"k": retriever_k})
         self.chain = (
-            {"context": self.vector_store.as_retriever(), "question": RunnablePassthrough()}
-            | self.prompt
-            | self.llm
-            | StrOutputParser()
+            {"context": self.retriever, "question": RunnablePassthrough()} | self.prompt | self.llm | StrOutputParser()
         )
 
     def get_retrieved_docs(self, question: str):
@@ -73,7 +75,7 @@ class RAGPipeline:
         Returns:
             List[Document]: List of retrieved documents with metadata.
         """
-        return self.vector_store.as_retriever().invoke(question)
+        return self.retriever.invoke(question)
 
     def query(self, question: str) -> Tuple[str, Dict[str, Any]]:
         """

@@ -80,7 +80,11 @@ def create_embedding_config(config: Dict) -> Optional[Dict[str, str]]:
 async def run_rag_pipeline(config: Dict, args):
     """Run the RAG pipeline with S3 integration and return the RAG instance."""
     embedding_config = create_embedding_config(config)
-    pipeline = DocumentProcessingPipeline(embedding_config=embedding_config)
+
+    # Get retriever_k from config, default to 8
+    retriever_k = config.get("rag", {}).get("retriever_k", 8)
+
+    pipeline = DocumentProcessingPipeline(embedding_config=embedding_config, retriever_k=retriever_k)
     model_config = create_model_config(config)
 
     try:

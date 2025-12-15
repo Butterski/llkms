@@ -7,12 +7,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 from dotenv import load_dotenv
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.callbacks import get_openai_callback
 from langchain_community.document_loaders import PyPDFLoader, UnstructuredImageLoader
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from llkms.utils.aws.s3_client import S3Client
 from llkms.utils.langchain.embeddings import OllamaEmbeddings
@@ -50,7 +50,7 @@ class DocumentProcessor:
             self.is_local = False
             logger.info(f"Using OpenAI embeddings with model: {model or 'text-embedding-3-small'}")
 
-        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
 
     def process_text(self, content: str) -> List[Document]:
         """
@@ -159,7 +159,7 @@ class DocumentProcessor:
 
 
 class DocumentProcessingPipeline:
-    def __init__(self, embedding_config: Optional[Dict[str, str]] = None):
+    def __init__(self, embedding_config: Optional[Dict[str, str]] = None, retriever_k: int = 8):
         """
         Initialize DocumentProcessingPipeline.
 
@@ -168,6 +168,7 @@ class DocumentProcessingPipeline:
                 - provider: "openai" or "ollama"
                 - model: Model name
                 - api_base: (optional) Custom API base URL
+            retriever_k (int): Number of documents to retrieve for RAG context.
         """
         load_dotenv(override=True)
         os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -175,6 +176,7 @@ class DocumentProcessingPipeline:
         self.doc_processor = DocumentProcessor(embedding_config=embedding_config)
         self.temp_dir = Path("temp")
         self.vector_cache = VectorStoreManager()
+        self.retriever_k = retriever_k
 
         if self.temp_dir.exists():
             shutil.rmtree(self.temp_dir)
@@ -207,7 +209,7 @@ class DocumentProcessingPipeline:
             logger.info("Loading local vector store from cache.")
             vector_store = self.vector_cache.load(self.doc_processor.embeddings)
             if vector_store is not None:
-                return RAGPipeline(vector_store, model_config=model_config)
+                return RAGPipeline(vector_store, model_config=model_config, retriever_k=self.retriever_k)
 
         logger.info(f"Starting to process bucket {bucket} with prefix '{prefix}'")
 
@@ -241,7 +243,7 @@ class DocumentProcessingPipeline:
 
         logger.info("Vector store saved locally.")
 
-        return RAGPipeline(vector_store, model_config=model_config)
+        return RAGPipeline(vector_store, model_config=model_config, retriever_k=self.retriever_k)
 
     async def async_process_file(self, bucket: str, file_key: str) -> List:
         """Asynchronously download and process a single file from S3.

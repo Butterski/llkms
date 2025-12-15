@@ -17,6 +17,9 @@ model:
   temperature: 0.7
   max_tokens: 2048
 
+rag:
+  retriever_k: 8  # Number of documents to retrieve for context
+
 embeddings:
   provider: ollama
   model: nomic-embed-text
