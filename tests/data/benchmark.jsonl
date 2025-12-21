@@ -1,0 +1,13 @@
+{"id": "test_001", "question": "Co to jest LLKMS", "expected_answer_keywords": [""], "relevant_chunk_ids": ["finalna_inżynierka.pdf"], "ground_truth": "", "type": "answerable"}
+{"id": "test_002", "question": "Co to jest DeepSeek", "expected_answer_keywords": [""], "relevant_chunk_ids": ["DeepSeek_V3.pdf"], "ground_truth": "", "type": "answerable"}
+{"id": "test_003", "question": "W co są wyposażone sale dla osób z niepełnosprawnością", "expected_answer_keywords": [""], "relevant_chunk_ids": ["Informator osoby z niepelnosprawnoscia.pdf"], "ground_truth": "", "type": "answerable"}
+{"id": "test_004", "question": "Czy projekt Train Qualitier jest związany z pociągami?", "expected_answer_keywords": [""], "relevant_chunk_ids": ["Projekt Systemu Train Qualitier - Dokumentacja.pdf"], "ground_truth": "", "type": "answerable"}
+{"id": "test_005", "question": "Jaki jest najlepszy dżem do kanapki z masłem orzechowym?", "expected_answer_keywords": [""], "relevant_chunk_ids": ["pbj.txt"], "ground_truth": "najlepszym dżemem do kanapki z masłem orzechowym jest dżem z czarnej porzeczki", "type": "answerable"}
+{"id": "test_006", "question": "Jakie kluczowe wymogi pracy dyplomowej / projektowej ", "expected_answer_keywords": [""], "relevant_chunk_ids": ["ZD22_01_Z4 wymogi edytorskie.pdf"], "ground_truth": "", "type": "answerable"}
+{"id": "test_008", "question": "Co to jest fotosynteza?", "expected_answer_keywords": [""], "relevant_chunk_ids": [], "ground_truth": "", "type": "unanswerable"}
+{"id": "test_009", "question": "Jakie są główne składniki powietrza?", "expected_answer_keywords": [""], "relevant_chunk_ids": [], "ground_truth": "", "type": "unanswerable"}
+{"id": "test_010", "question": "Kto powiedział 'More tuna, please'?", "expected_answer_keywords": [""], "relevant_chunk_ids": ["image_tesseract-min.png"], "ground_truth": "", "type": "ananswerable"}
+{"id": "test_011", "question": "Co to jest kwantowa superpozycja?", "expected_answer_keywords": [""], "relevant_chunk_ids": [], "ground_truth": "", "type": "unanswerable"}
+{"id": "test_012", "question": "Jakie są zalety energii słonecznej?", "expected_answer_keywords": [""], "relevant_chunk_ids": [], "ground_truth": "", "type": "unanswerable"}
+
+
