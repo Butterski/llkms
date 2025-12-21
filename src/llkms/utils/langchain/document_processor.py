@@ -1,5 +1,5 @@
-import asyncio
 import os
+import asyncio
 import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -50,7 +50,8 @@ class DocumentProcessor:
             self.is_local = False
             logger.info(f"Using OpenAI embeddings with model: {model or 'text-embedding-3-small'}")
 
-        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
+        # Reduced chunk size to 1000 to avoid truncation with 512-token limit models (like mxbai-embed-large)
+        self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
     def process_text(self, content: str) -> List[Document]:
         """

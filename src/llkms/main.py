@@ -4,9 +4,11 @@ import os
 from typing import Dict, Optional
 
 import questionary
+from regex import T
 import yaml
 from dotenv import load_dotenv
 
+from llkms.utils.doctor import run_doctor
 from llkms.utils.interactive_query import run_interactive_query
 from llkms.utils.langchain.document_processor import DocumentProcessingPipeline
 from llkms.utils.langchain.model_factory import ModelConfig
@@ -50,6 +52,7 @@ def parse_args():
     parser.add_argument(
         "--reindex", action="store_true", help="Force reindexing of the vector store even if a local cache exists"
     )
+    parser.add_argument("--doctor", action="store_true", help="Run system health check and exit")
     return parser.parse_args()
 
 
@@ -115,7 +118,10 @@ def display_usage_summary(usage: Dict):
 def main_menu(config: Dict, args):
     """Display and handle the main menu."""
     while True:
-        choice = questionary.select("Choose an action:", choices=["RAG Pipeline with S3", "Exit"]).ask()
+        choice = questionary.select(
+            "Choose an action:",
+            choices=["RAG Pipeline with S3", "Doctor (System Check)", "Exit"],
+        ).ask()
 
         if choice == "RAG Pipeline with S3":
             try:
@@ -128,15 +134,22 @@ def main_menu(config: Dict, args):
                     display_usage_summary(pipeline.total_usage)
             except Exception as e:
                 logger.error(f"Error in RAG pipeline: {e}")
+        elif choice == "Doctor (System Check)":
+            run_doctor(config)
         elif choice == "Exit":
             break
 
 
 def main():
     """Main entry point for the LLKMS application."""
-    load_dotenv()
+    load_dotenv(override=True)
     args = parse_args()
     config = load_config(args.config)
+
+    # Run doctor mode if requested
+    if args.doctor:
+        run_doctor(config)
+        return
 
     if not config["aws"]["access_key_id"] or not config["aws"]["secret_access_key"]:
         raise ValueError("AWS credentials not found in environment or .env file")
