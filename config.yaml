@@ -1,21 +1,29 @@
+# Full Cloud Configuration
+# LLM: DeepSeek API
+# Embeddings: OpenAI text-embedding-3-small
+# Storage: AWS S3
+
 aws:
   access_key_id: ${AWS_ACCESS_KEY_ID}
   secret_access_key: ${AWS_SECRET_ACCESS_KEY}
   bucket: eng-llkms
-  prefix: knowledge-dsw
+  prefix: knowledge
 
 model:
-  provider: ollama
-  model: mwiewior/bielik:latest
-  api_key: ""
-  api_base: "http://localhost:11434/v1"
+  provider: deepseek
+  model: deepseek-chat
+  api_key: ${DEEPSEEK_API_KEY}
+  api_base: "https://api.deepseek.com"
   temperature: 0.7
-  max_tokens: 2048
+  max_tokens: 1024
 
+rag:
+  retriever_k: 8  # Number of documents to retrieve for context
+  
 embeddings:
-  provider: ollama
-  model: mxbai-embed-large
-  api_base: "http://localhost:11434"
+  provider: openai
+  model: text-embedding-3-small
+  # api_base not needed for OpenAI
 
 app:
   temp_dir: temp
