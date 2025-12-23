@@ -1,0 +1,7 @@
+config_name,total_cases,answerable_cases,no_answer_cases,document_count,precision_at_k,recall_at_k,f1_at_k,mrr_at_k,refusal_accuracy,faithfulness_proxy,ragas_faithfulness,ragas_answer_relevancy,ragas_context_precision,ragas_context_recall,indexing_latency_ms,avg_retrieval_latency_ms,avg_generation_latency_ms,error_count
+config_cloud_deepseek,11,7,4,303,0.3864,0.9091,0.4346,0.5000,0.9091,0.1667,0.8159,0.0000,0.5972,0.6667,3.79,456.58,3083.00,0
+config_cloud_openai,11,7,4,303,0.3864,0.9091,0.4346,0.5000,0.9091,0.1458,0.3333,0.0000,0.8009,1.0000,2.38,314.39,6722.20,0
+config_local_bielik,11,7,4,303,0.4545,1.0000,0.5013,0.6364,0.6364,0.1429,0.0000,0.0000,0.0000,0.0000,3.85,305.55,11514.49,0
+config_local_gemma2,11,7,4,303,0.2727,0.8182,0.3152,0.3939,0.8182,0.1000,0.0000,0.0000,0.0000,0.0000,2.07,113.19,3206.39,0
+config_local_llama3.2,11,7,4,303,0.2727,0.8182,0.3152,0.3939,0.7273,0.1250,0.0000,0.0000,0.9583,0.0000,3.10,585.93,1797.54,0
+config_local_qwen2.5,11,7,4,303,0.2727,0.8182,0.3152,0.3939,0.7273,0.2500,0.7083,0.0000,0.5833,0.7500,2.26,1694.64,4010.86,0

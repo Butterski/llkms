@@ -1,5 +1,5 @@
 # Full Cloud Configuration with OpenAI
-# LLM: OpenAI GPT-4
+# LLM: OpenAI GPT-5-mini
 # Embeddings: OpenAI text-embedding-3-small
 # Storage: AWS S3
 

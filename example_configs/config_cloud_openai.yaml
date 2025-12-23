@@ -7,11 +7,11 @@ aws:
   access_key_id: ${AWS_ACCESS_KEY_ID}
   secret_access_key: ${AWS_SECRET_ACCESS_KEY}
   bucket: eng-llkms
-  prefix: knowledge
+  prefix: bench_knowledge
 
 model:
   provider: openai
-  model: gpt-4o-mini
+  model: gpt-5-mini
   api_key: ${OPENAI_API_KEY}
   api_base: "https://api.openai.com/v1"
   temperature: 0.7

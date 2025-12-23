@@ -1,6 +1,6 @@
-# Hybrid Configuration
-# LLM: Ollama with llama3.2 (local)
-# Embeddings: OpenAI (cloud) - for better quality
+# Llama 3.2 3B Instruct Configuration
+# LLM: Ollama with llama3.2:3b-instruct-q4_K_M
+# Embeddings: Ollama with mxbai-embed-large
 # Storage: AWS S3
 
 aws:
@@ -11,19 +11,16 @@ aws:
 
 model:
   provider: ollama
-  model: llama3.2
+  model: llama3.2:3b-instruct-q4_K_M
   api_key: ""
   api_base: "http://localhost:11434/v1"
-  temperature: 0.7
+  temperature: 0.1
   max_tokens: 2048
 
-rag:
-  retriever_k: 8  # Number of documents to retrieve for context
-
 embeddings:
-  provider: openai
-  model: text-embedding-3-small
-  # Uses OPENAI_API_KEY from environment
+  provider: ollama
+  model: mxbai-embed-large
+  api_base: "http://localhost:11434"
 
 app:
   temp_dir: temp
