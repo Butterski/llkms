@@ -1,0 +1,3 @@
+config_name,total_cases,answerable_cases,no_answer_cases,document_count,precision_at_k,recall_at_k,f1_at_k,mrr_at_k,refusal_accuracy,faithfulness_proxy,ragas_faithfulness,ragas_answer_relevancy,ragas_context_precision,ragas_context_recall,indexing_latency_ms,avg_retrieval_latency_ms,avg_generation_latency_ms,error_count
+config_cloud_deepseek,20,11,9,303,0.3750,0.9500,0.4152,0.4750,0.9500,0.2000,0.8961,0.0000,0.6083,0.9000,21.76,404.70,3250.76,0
+config_cloud_openai,20,11,9,303,0.3750,0.9500,0.4152,0.4750,0.9500,0.1375,0.3333,0.0000,0.8302,0.7778,18.73,284.94,8978.99,0
