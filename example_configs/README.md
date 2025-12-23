@@ -27,7 +27,7 @@ This directory contains example configuration files for different deployment sce
 
 ### `config_cloud_openai.yaml`
 **Full Cloud with OpenAI**
-- LLM: `gpt-4o-mini` (OpenAI)
+- LLM: `gpt-5-mini` (OpenAI)
 - Embeddings: `text-embedding-3-small` (OpenAI)
 - Cost: Pay per token
 - Requirements: OpenAI API key

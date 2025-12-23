@@ -14,7 +14,9 @@ class ModelConfig:
     api_key: Optional[str] = None
     api_base: Optional[str] = None
     max_tokens: int = 1024
-    temperature: float = 0.7
+    temperature: float = 0.1  # Lower default for more factual/deterministic RAG responses
+    top_p: float = 0.8  # Nucleus sampling - ogranicza losowość
+    repetition_penalty: float = 1.1  # Zapobiega powtarzaniu
 
 
 class ModelFactory:
@@ -48,13 +50,27 @@ class ModelFactory:
                 raise ValueError(f"API key not found for provider {config.provider}")
 
         logger.info(f"Creating model {config.model_name} with provider {config.provider}")
-        return ChatOpenAI(
-            model=config.model_name,
-            openai_api_key=api_key,
-            openai_api_base=config.api_base or provider_config["api_base"],
-            max_tokens=config.max_tokens,
-            temperature=config.temperature,
-        )
+
+        # Dla Bielika/Ollama użyj niższej temperatury
+        temperature = config.temperature
+        if config.provider == "ollama" and "bielik" in config.model_name.lower():
+            temperature = min(temperature, 0.05)  # Max 0.05 dla Bielika
+            logger.info(f"Using reduced temperature {temperature} for Bielik model")
+
+        # Bazowe parametry dla wszystkich providerów
+        model_kwargs = {
+            "model": config.model_name,
+            "openai_api_key": api_key,
+            "openai_api_base": config.api_base or provider_config["api_base"],
+            "max_tokens": config.max_tokens,
+            "temperature": temperature,
+        }
+
+        # top_p tylko dla Ollama - OpenAI/DeepSeek nie wspierają tego parametru
+        if config.provider == "ollama":
+            model_kwargs["top_p"] = config.top_p
+
+        return ChatOpenAI(**model_kwargs)
 
     @classmethod
     def get_default_config(cls, provider: str, model_name: str) -> ModelConfig:

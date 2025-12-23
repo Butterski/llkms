@@ -53,17 +53,19 @@ class DocumentProcessor:
         # Reduced chunk size to 1000 to avoid truncation with 512-token limit models (like mxbai-embed-large)
         self.text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
-    def process_text(self, content: str) -> List[Document]:
+    def process_text(self, content: str, metadata: Optional[Dict[str, Any]] = None) -> List[Document]:
         """
         Convert text content into document chunks.
 
         Args:
             content (str): The text content to process.
+            metadata (dict, optional): Metadata to attach to the documents.
 
         Returns:
             List[Document]: List of document chunks.
         """
-        return self.text_splitter.create_documents([content])
+        metadatas = [metadata] if metadata else None
+        return self.text_splitter.create_documents([content], metadatas=metadatas)
 
     def process_pdf(self, file_path: Path) -> List[Document]:
         """
@@ -104,7 +106,7 @@ class DocumentProcessor:
         try:
             doc = DocxDocument(str(file_path))
             full_text = "\n".join([para.text for para in doc.paragraphs])
-            return self.process_text(full_text)
+            return self.process_text(full_text, metadata={"source": str(file_path)})
         except Exception as e:
             logger.error(f"Error processing DOCX file {file_path}: {str(e)}")
             return []
@@ -124,7 +126,7 @@ class DocumentProcessor:
                 html_content = f.read()
             soup = BeautifulSoup(html_content, "html.parser")
             text = soup.get_text(separator="\n")
-            return self.process_text(text)
+            return self.process_text(text, metadata={"source": str(file_path)})
         except Exception as e:
             logger.error(f"Error processing HTML file {file_path}: {str(e)}")
             return []
@@ -265,7 +267,12 @@ class DocumentProcessingPipeline:
 
         # Choose processing method based on file extension
         if file_key.lower().endswith(".txt"):
-            return await loop.run_in_executor(None, lambda: self.doc_processor.process_text(local_path.read_text()))
+            return await loop.run_in_executor(
+                None,
+                lambda: self.doc_processor.process_text(
+                    local_path.read_text(encoding="utf-8"), metadata={"source": str(local_path)}
+                ),
+            )
         elif file_key.lower().endswith(".pdf"):
             return await loop.run_in_executor(None, self.doc_processor.process_pdf, local_path)
         elif file_key.lower().endswith((".png", ".jpg", ".jpeg")):

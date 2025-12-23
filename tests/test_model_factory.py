@@ -24,7 +24,7 @@ def assert_secret_str_value(secret: SecretStr, expected: str):
     [
         # Ollama local configuration (primary use case)
         (
-            {"provider": "ollama", "model_name": "bielik:7b", "max_tokens": 2048, "temperature": 0.7},
+            {"provider": "ollama", "model_name": "mwiewior/bielik:latest ", "max_tokens": 2048, "temperature": 0.7},
             {"api_base": "http://localhost:11434/v1", "api_key": "ollama"},
         ),
         (
@@ -64,11 +64,11 @@ def test_model_creation(mock_env_keys, config_data, expected):
 
 def test_ollama_no_api_key_required():
     """Test that Ollama provider works without any API key in environment"""
-    config = ModelConfig(provider="ollama", model_name="bielik:7b")
+    config = ModelConfig(provider="ollama", model_name="mwiewior/bielik:latest ")
     model = ModelFactory.create_model(config)
 
     assert isinstance(model, ChatOpenAI)
-    assert model.model_name == "bielik:7b"
+    assert model.model_name == "mwiewior/bielik:latest "
     assert model.openai_api_base == "http://localhost:11434/v1"
 
 

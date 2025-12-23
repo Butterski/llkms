@@ -20,15 +20,19 @@ Environment variables for thresholds:
     BENCHMARK_K: Value of k for metrics (default: 4)
     BENCHMARK_CONFIGS_DIR: Directory with config files (default: tests/benchmark_configs)
     BENCHMARK_DATA_PATH: Path to benchmark JSONL file (default: tests/data/benchmark.jsonl)
+    BENCHMARK_MAX_WORKERS: Number of parallel threads for benchmark execution (default: 4)
 
 Usage:
     pytest tests/test_benchmark_rag.py -v --tb=short
     pytest tests/test_benchmark_rag.py -v -k "benchmark" --tb=short
 """
 
+import concurrent.futures
 import csv
 import json
 import os
+import re
+import subprocess
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -51,9 +55,52 @@ from llkms.utils.langchain.vector_store_manager import VectorStoreManager
 load_dotenv()
 
 
+def clean_llm_output(text: str) -> str:
+    """Clean special tokens and artifacts from LLM output."""
+    if not text:
+        return text
+    # Remove common special tokens
+    special_tokens = ["<s>", "</s>", "<|im_start|>", "<|im_end|>", "<|endoftext|>", "[INST]", "[/INST]"]
+    for token in special_tokens:
+        text = text.replace(token, "")
+    # Clean up extra whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
 # =============================================================================
 # Configuration & Data Classes
 # =============================================================================
+
+
+def check_and_pull_ollama_model(model_name: str):
+    """Check if Ollama model exists, pull if not."""
+    print(f"Checking availability of Ollama model: {model_name}")
+    try:
+        # Check if model exists
+        result = subprocess.run(["ollama", "list"], capture_output=True, text=True, check=True)
+        # Parse output to get exact model names
+        # Output format: NAME  ID  SIZE  MODIFIED
+        existing_models = []
+        lines = result.stdout.strip().split("\n")
+        if len(lines) > 1:
+            for line in lines[1:]:
+                parts = line.split()
+                if parts:
+                    existing_models.append(parts[0])
+
+        if model_name not in existing_models:
+            print(f"Model {model_name} not found locally. Pulling...")
+            # Stream output to show progress
+            # subprocess.run(["ollama", "pull", model_name], check=True)
+            # print(f"Model {model_name} pulled successfully.")
+        else:
+            print(f"Model {model_name} is already available.")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error checking/pulling Ollama model {model_name}: {e}")
+    except FileNotFoundError:
+        print("Ollama executable not found. Please ensure Ollama is installed and in PATH.")
 
 
 @dataclass
@@ -141,6 +188,23 @@ class AggregateMetrics:
 # =============================================================================
 
 
+def normalize_doc_id(doc_id: str) -> str:
+    """
+    Normalize document ID to just the filename for matching.
+
+    This allows matching "knowledge/DeepSeek_V3.pdf" with "DeepSeek_V3.pdf".
+    """
+    from pathlib import Path
+
+    # Extract just the filename from any path
+    return Path(doc_id).name.lower()
+
+
+def doc_ids_match(retrieved_id: str, relevant_id: str) -> bool:
+    """Check if a retrieved document ID matches a relevant document ID."""
+    return normalize_doc_id(retrieved_id) == normalize_doc_id(relevant_id)
+
+
 def calculate_precision_at_k(retrieved: List[str], relevant: List[str], k: int) -> float:
     """
     Calculate Precision@K.
@@ -158,8 +222,9 @@ def calculate_precision_at_k(retrieved: List[str], relevant: List[str], k: int) 
     top_k = retrieved[:k]
     if not top_k:
         return 0.0
-    relevant_set = set(relevant)
-    hits = sum(1 for doc_id in top_k if doc_id in relevant_set)
+    # Use filename-based matching
+    relevant_normalized = [normalize_doc_id(r) for r in relevant]
+    hits = sum(1 for doc_id in top_k if normalize_doc_id(doc_id) in relevant_normalized)
     return hits / len(top_k)
 
 
@@ -178,9 +243,11 @@ def calculate_recall_at_k(retrieved: List[str], relevant: List[str], k: int) -> 
     if not relevant:
         return 1.0  # If no relevant docs expected, recall is perfect
     top_k = retrieved[:k]
-    relevant_set = set(relevant)
-    hits = sum(1 for doc_id in top_k if doc_id in relevant_set)
-    return hits / len(relevant_set)
+    # Use filename-based matching
+    retrieved_normalized = [normalize_doc_id(r) for r in top_k]
+    relevant_normalized = [normalize_doc_id(r) for r in relevant]
+    hits = sum(1 for rel in relevant_normalized if rel in retrieved_normalized)
+    return hits / len(relevant_normalized)
 
 
 def calculate_f1_at_k(precision: float, recall: float) -> float:
@@ -211,9 +278,10 @@ def calculate_reciprocal_rank(retrieved: List[str], relevant: List[str], k: int)
     Returns:
         Reciprocal rank (1/rank of first relevant doc, or 0 if none found).
     """
-    relevant_set = set(relevant)
+    # Use filename-based matching
+    relevant_normalized = [normalize_doc_id(r) for r in relevant]
     for i, doc_id in enumerate(retrieved[:k]):
-        if doc_id in relevant_set:
+        if normalize_doc_id(doc_id) in relevant_normalized:
             return 1.0 / (i + 1)
     return 0.0
 
@@ -230,7 +298,7 @@ def detect_refusal(answer: str) -> bool:
     """
     answer_lower = answer.lower()
 
-    # Hard refusal patterns - if answer contains these and is short, it's likely a refusal
+    # Hard refusal patterns - if answer contains these, it's likely a refusal
     hard_refusal_patterns = [
         "i don't know",
         "i do not know",
@@ -244,6 +312,23 @@ def detect_refusal(answer: str) -> bool:
         "no information",
         "nie jestem w stanie",
         "nie mogę odpowiedzieć",
+        # Added patterns for "cannot find" style refusals
+        "i cannot find",
+        "i can't find",
+        "cannot find this information",
+        "nie mogę znaleźć",
+        "nie znalazłem",
+        "nie znaleziono",
+        "brak informacji",
+        "the provided documents do not contain",
+        "documents do not contain",
+        "not mentioned in the provided",
+        "not found in the provided",
+        "nie zawierają informacji",
+        "dokumenty nie zawierają",
+        "i'm sorry, but i can't answer",
+        "sorry, but i can't answer",
+        "przepraszam, ale nie mogę",
     ]
 
     # Soft refusal patterns - only count as refusal if the answer doesn't continue with content
@@ -340,48 +425,48 @@ def get_ragas_evaluator_llm(config: Dict):
         config: Configuration dictionary.
 
     Returns:
-        LangChain LLM instance for RAGAS evaluation.
+        RAGAS LLM instance for evaluation.
     """
-    from langchain_openai import ChatOpenAI
+    from openai import OpenAI
+    from ragas.llms import llm_factory
 
     # Check for explicit RAGAS eval model in env
     ragas_model = os.getenv("RAGAS_EVAL_MODEL")
     if ragas_model:
         # Use OpenAI-compatible endpoint
-        return ChatOpenAI(
-            model=ragas_model,
-            openai_api_key=os.getenv("OPENAI_API_KEY", "ollama"),
-            openai_api_base=os.getenv("RAGAS_EVAL_API_BASE", "https://api.openai.com/v1"),
-            temperature=0,
+        client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY", "ollama"),
+            base_url=os.getenv("RAGAS_EVAL_API_BASE", "https://api.openai.com/v1"),
         )
+        return llm_factory(model=ragas_model, client=client)
 
     # Use same provider as config
     provider = config.get("model", {}).get("provider", "ollama")
     model_name = config.get("model", {}).get("model", "llama3.2")
 
     if provider == "ollama":
-        return ChatOpenAI(
-            model=model_name,
-            openai_api_key="ollama",
-            openai_api_base=config.get("model", {}).get("api_base", "http://localhost:11434/v1"),
-            temperature=0,
+        client = OpenAI(
+            api_key="ollama",
+            base_url=config.get("model", {}).get("api_base", "http://localhost:11434/v1"),
         )
+        return llm_factory(model=model_name, client=client)
     elif provider == "openai":
-        return ChatOpenAI(
-            model=model_name,
-            openai_api_key=os.getenv("OPENAI_API_KEY"),
-            temperature=0,
+        client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
         )
+        return llm_factory(model=model_name, client=client)
     elif provider == "deepseek":
-        return ChatOpenAI(
-            model=model_name,
-            openai_api_key=os.getenv("DEEPSEEK_API_KEY"),
-            openai_api_base="https://api.deepseek.com",
-            temperature=0,
+        client = OpenAI(
+            api_key=os.getenv("DEEPSEEK_API_KEY"),
+            base_url="https://api.deepseek.com",
         )
+        return llm_factory(model=model_name, client=client)
     else:
         # Fallback to OpenAI
-        return ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
+        )
+        return llm_factory(model="gpt-4o-mini", client=client)
 
 
 def get_ragas_embeddings(config: Dict):
@@ -392,22 +477,30 @@ def get_ragas_embeddings(config: Dict):
         config: Configuration dictionary.
 
     Returns:
-        Embeddings instance.
+        RAGAS Embeddings instance.
     """
-    from langchain_openai import OpenAIEmbeddings
-
-    from llkms.utils.langchain.embeddings import OllamaEmbeddings
+    from openai import OpenAI
+    from ragas.embeddings import OpenAIEmbeddings
 
     emb_config = config.get("embeddings", {})
     provider = emb_config.get("provider", "openai")
 
     if provider == "ollama":
-        return OllamaEmbeddings(
-            model=emb_config.get("model", "nomic-embed-text"),
-            base_url=emb_config.get("api_base", "http://localhost:11434"),
+        # Ollama is OpenAI compatible
+        base_url = emb_config.get("api_base", "http://localhost:11434")
+        if not base_url.endswith("/v1"):
+            base_url = f"{base_url}/v1"
+
+        client = OpenAI(
+            api_key="ollama",
+            base_url=base_url,
         )
+        return OpenAIEmbeddings(model=emb_config.get("model", "nomic-embed-text"), client=client)
     else:
-        return OpenAIEmbeddings(model=emb_config.get("model", "text-embedding-3-small"))
+        client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"),
+        )
+        return OpenAIEmbeddings(model=emb_config.get("model", "text-embedding-3-small"), client=client)
 
 
 def run_ragas_evaluation(
@@ -432,8 +525,6 @@ def run_ragas_evaluation(
     # Check if RAGAS is available
     try:
         from ragas import EvaluationDataset, evaluate
-        from ragas.embeddings import LangchainEmbeddingsWrapper
-        from ragas.llms import LangchainLLMWrapper
         from ragas.metrics import (
             Faithfulness,
             LLMContextPrecisionWithoutReference,
@@ -459,8 +550,8 @@ def run_ragas_evaluation(
 
     try:
         # Get LLM and embeddings for evaluation
-        eval_llm = LangchainLLMWrapper(get_ragas_evaluator_llm(config))
-        eval_embeddings = LangchainEmbeddingsWrapper(get_ragas_embeddings(config))
+        eval_llm = get_ragas_evaluator_llm(config)
+        eval_embeddings = get_ragas_embeddings(config)
 
         # Prepare dataset for RAGAS
         eval_samples = []
@@ -490,24 +581,52 @@ def run_ragas_evaluation(
             metrics.append(LLMContextRecall(llm=eval_llm))
 
         # Run evaluation
+        print(
+            f"  Using RAGAS eval LLM: {config.get('model', {}).get('provider', 'unknown')} / {config.get('model', {}).get('model', 'unknown')}"
+        )
         eval_results = evaluate(dataset=dataset, metrics=metrics)
 
         # Map results back to CaseResult objects
         df = eval_results.to_pandas()
+        print(f"  RAGAS returned {len(df)} rows with columns: {list(df.columns)}")
+
+        import math
 
         for i, r in enumerate(evaluable_results):
             if i < len(df):
                 row = df.iloc[i]
-                r.ragas_faithfulness = float(row.get("faithfulness", 0) or 0)
-                r.ragas_answer_relevancy = float(row.get("answer_relevancy", 0) or 0)
-                r.ragas_context_precision = float(row.get("llm_context_precision_without_reference", 0) or 0)
+                # Safely extract values, converting NaN to 0
+                faith = row.get("faithfulness", 0)
+                r.ragas_faithfulness = (
+                    0.0 if (faith is None or (isinstance(faith, float) and math.isnan(faith))) else float(faith)
+                )
+
+                relevancy = row.get("answer_relevancy", 0)
+                r.ragas_answer_relevancy = (
+                    0.0
+                    if (relevancy is None or (isinstance(relevancy, float) and math.isnan(relevancy)))
+                    else float(relevancy)
+                )
+
+                precision = row.get("llm_context_precision_without_reference", 0)
+                r.ragas_context_precision = (
+                    0.0
+                    if (precision is None or (isinstance(precision, float) and math.isnan(precision)))
+                    else float(precision)
+                )
+
                 if has_ground_truth:
-                    r.ragas_context_recall = float(row.get("context_recall", 0) or 0)
+                    recall = row.get("context_recall", 0)
+                    r.ragas_context_recall = (
+                        0.0 if (recall is None or (isinstance(recall, float) and math.isnan(recall))) else float(recall)
+                    )
 
         print(f"  RAGAS evaluation complete")
 
     except Exception as e:
-        print(f"  RAGAS evaluation failed: {e}")
+        print(
+            f"  RAGAS evaluation failed for config {config.get('model', {}).get('provider', 'unknown')}/{config.get('model', {}).get('model', 'unknown')}: {e}"
+        )
         import traceback
 
         traceback.print_exc()
@@ -1007,8 +1126,8 @@ def run_benchmark_for_config(
             )
         return metrics, case_results
 
-    # Run each case
-    for case in cases:
+    def process_case(case: BenchmarkCase) -> CaseResult:
+        """Process a single benchmark case."""
         result = CaseResult(
             case_id=case.id,
             config_name=config_name,
@@ -1035,12 +1154,14 @@ def run_benchmark_for_config(
 
             # Generation phase
             answer, generation_latency = runner.generate(case.question)
+            # Clean special tokens from answer
+            answer = clean_llm_output(answer)
             result.answer = answer
             result.generation_latency_ms = generation_latency
 
             # Calculate generation metrics
             result.is_refusal = detect_refusal(answer)
-            if case.type == "no_answer":
+            if case.type == "no_answer" or case.type == "unanswerable":
                 result.refusal_correct = result.is_refusal
             else:
                 result.refusal_correct = not result.is_refusal
@@ -1049,8 +1170,22 @@ def run_benchmark_for_config(
 
         except Exception as e:
             result.error = str(e)
+            # print(f"Error processing case {case.id}: {e}") # Optional logging
 
-        case_results.append(result)
+        return result
+
+    # Run cases in parallel
+    max_workers = int(os.getenv("BENCHMARK_MAX_WORKERS", "4"))
+    print(f"  Running benchmark with {max_workers} threads...")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_case = {executor.submit(process_case, case): case for case in cases}
+        for future in concurrent.futures.as_completed(future_to_case):
+            result = future.result()
+            case_results.append(result)
+
+    # Sort results by case_id to maintain consistent order
+    case_results.sort(key=lambda x: x.case_id)
 
     # Run RAGAS evaluation if enabled
     if run_ragas:
@@ -1121,10 +1256,10 @@ def aggregate_case_results(
 
     # Generation metrics
     answerable = [r for r in valid_results if r.case_type == "answerable"]
-    no_answer = [r for r in valid_results if r.case_type == "no_answer"]
+    unanswerable = [r for r in valid_results if r.case_type in ("no_answer", "unanswerable")]
 
     metrics.answerable_cases = len(answerable)
-    metrics.no_answer_cases = len(no_answer)
+    metrics.no_answer_cases = len(unanswerable)
 
     # Refusal accuracy (for no_answer cases: should refuse; for answerable: should not refuse)
     refusal_correct_count = sum(1 for r in valid_results if r.refusal_correct)
@@ -1298,6 +1433,18 @@ def all_benchmark_results(
 
         try:
             config = load_yaml_config(config_path)
+
+            # Check for Ollama models and pull if necessary
+            if config.get("model", {}).get("provider") == "ollama":
+                model_name = config.get("model", {}).get("model")
+                if model_name:
+                    check_and_pull_ollama_model(model_name)
+
+            if config.get("embeddings", {}).get("provider") == "ollama":
+                model_name = config.get("embeddings", {}).get("model")
+                if model_name:
+                    check_and_pull_ollama_model(model_name)
+
             metrics, case_results = run_benchmark_for_config(
                 config_name, config, benchmark_cases, k=benchmark_k, run_ragas=enable_ragas
             )
