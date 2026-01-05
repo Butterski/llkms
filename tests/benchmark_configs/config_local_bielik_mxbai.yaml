@@ -11,7 +11,7 @@ aws:
 
 model:
   provider: ollama
-  model: mwiewior/bielik:latest
+  model: SpeakLeash/bielik-11b-v2.3-instruct:Q4_K_M
   api_key: ""
   api_base: "http://localhost:11434/v1"
   temperature: 0.7
